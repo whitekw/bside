@@ -172,9 +172,10 @@ export const roomApi = {
     )
   },
 
-  searchVideos(query: string) {
+  searchVideos(code: string, participantToken: string, query: string) {
     return request<{ items: VideoSearchResult[] }>(
-      `/api/youtube/search?q=${encodeURIComponent(query)}`,
+      `/api/rooms/${encodeURIComponent(code)}/search?q=${encodeURIComponent(query)}`,
+      { headers: { 'x-participant-token': participantToken } },
     )
   },
 

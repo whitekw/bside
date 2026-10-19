@@ -1,3 +1,4 @@
+import { History } from 'lucide-react'
 import { formatDuration } from '../../../shared/format'
 import { useI18n } from '../../../shared/i18n/i18n-context'
 import { cn } from '../../../shared/styles'
@@ -35,6 +36,7 @@ export function VideoResultList({
               actionCount === 1 ? 'grid-cols-[minmax(0,1fr)_36px]' : 'grid-cols-1',
             'group rounded-[4px] bg-white/[0.035] p-3 ring-1 ring-transparent ring-inset transition-colors duration-150 hover:bg-purple/15 hover:ring-purple/40 focus-within:bg-purple/15 focus-within:ring-purple/40',
             'md:flex md:items-center md:gap-[11px] md:p-2',
+            video.previouslyPlayed && 'bg-purple/[0.09] ring-purple/25 hover:bg-purple/15 hover:ring-purple/50 focus-within:ring-purple/50',
           )}
           key={video.videoId}
         >
@@ -44,6 +46,10 @@ export function VideoResultList({
               src={video.thumbnailUrl}
               alt=""
             />
+            {video.previouslyPlayed && <span className="absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-full border border-purple-light/30 bg-canvas text-purple-light shadow-sm"
+              role="img" aria-label={t('search.previouslyPlayed')} title={t('search.previouslyPlayed')}>
+              <History size={12} aria-hidden="true" />
+            </span>}
           </div>
           <div className={cn('row-start-2 flex min-w-0 flex-1 flex-col md:col-span-1 md:row-auto', actionCount === 2 ? 'col-span-3' : actionCount === 1 && 'col-span-2')}>
             <strong

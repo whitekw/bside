@@ -167,7 +167,8 @@ html[data-bside-desktop] .desktop-entry-shell.flex .desktop-entry-content {
 }
 
 .room-volume-control:hover,
-.room-volume-control:focus-within {
+.room-volume-control:has(:focus-visible),
+.room-volume-control:has(.room-volume-slider:active) {
   --room-volume-fill: #1ed760;
 }
 
@@ -189,11 +190,13 @@ html[data-bside-desktop] .desktop-entry-shell.flex .desktop-entry-content {
 }
 
 .room-volume-control:hover .room-volume-slider::-webkit-slider-thumb,
-.room-volume-control:focus-within .room-volume-slider::-webkit-slider-thumb {
+.room-volume-control:has(:focus-visible) .room-volume-slider::-webkit-slider-thumb,
+.room-volume-control:has(.room-volume-slider:active) .room-volume-slider::-webkit-slider-thumb {
   background: #fff;
 }
 
 .room-volume-control:hover .room-volume-slider::-moz-range-thumb,
-.room-volume-control:focus-within .room-volume-slider::-moz-range-thumb {
+.room-volume-control:has(:focus-visible) .room-volume-slider::-moz-range-thumb,
+.room-volume-control:has(.room-volume-slider:active) .room-volume-slider::-moz-range-thumb {
   background: #fff;
 }

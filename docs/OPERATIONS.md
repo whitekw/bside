@@ -17,6 +17,8 @@
 | `DATABASE_PATH` | `./data/jukebox.sqlite` | 선택 | SQLite 파일 경로 |
 | `PARTICIPANT_LEAVE_GRACE_MS` | `5000` | 선택 | 마지막 연결 종료 후 참여자를 오프라인 처리하기까지의 유예 시간(ms) |
 | `YOUTUBE_API_KEY` | 없음 | YouTube 기능에 필수 | YouTube Data API v3 키 |
+| `YOUTUBE_SEARCH_DAILY_LIMIT` | `100` | 선택 | 관리자 화면의 검색 버킷 일일 한도. 실제 Google 프로젝트 설정에 맞춤 |
+| `YOUTUBE_DATA_DAILY_LIMIT` | `10000` | 선택 | 관리자 화면의 일반 조회 버킷 일일 한도. 요청 차단에는 사용하지 않음 |
 | `TRUST_PROXY` | 백엔드 기본값 `false`, Compose 기본값 `true` | 프록시 구성에 따라 | `true`이면 Express가 한 단계 프록시의 클라이언트 IP를 신뢰 |
 | `JUKEBOX_PORT` | `3001` | 로컬 Compose에서 선택 | `compose.yaml`에서 호스트에 공개할 포트. 운영 Compose는 호스트 포트를 공개하지 않음 |
 | `DISCORD_CLIENT_ID` | 없음 | 방 생성에 필수 | Discord 애플리케이션 Client ID |
@@ -121,7 +123,7 @@ docker compose down
 
 ### 기존 DB 초기화
 
-현재 SQLite 스키마는 버전 3입니다. 버전 1·2 DB는 자동 업그레이드하며 기존 방·참여자·로그인 세션을 보존합니다. 기존 방의 제목은 방 코드로, 비로그인 참여는 허용으로 설정됩니다. 버전 1보다 오래된 DB는 초기화 안내 오류와 함께 시작을 중단합니다. 업그레이드 전에는 SQLite 볼륨을 백업하세요.
+현재 SQLite 스키마는 버전 16입니다. 지원하는 버전 1~15 DB는 기존 데이터를 보존하며 자동 업그레이드합니다. 버전 16은 YouTube API 사용량의 일별 합계와 수집 시작 시각을 저장합니다. 버전 1보다 오래된 DB는 초기화 안내 오류와 함께 시작을 중단합니다. 업그레이드 전에는 SQLite 볼륨을 백업하세요.
 
 - 로컬 실행: 백엔드를 중지한 뒤 `DATABASE_PATH`가 가리키는 DB 파일과 같은 이름의 `-wal`, `-shm` 파일을 제거하고 다시 시작합니다. 기본 경로는 `backend/data/jukebox.sqlite`입니다.
 - `compose.yaml`: 서비스를 중지한 뒤 해당 프로젝트의 `jukebox-data` 볼륨을 제거하고 다시 생성합니다. 다른 프로젝트가 같은 이름의 볼륨을 사용하는지 확인하세요.
@@ -179,6 +181,16 @@ flowchart LR
 운영 Compose는 재현 가능한 SHA 태그를 사용합니다. `master` 게시가 끝나면 CI가 `compose.deploy.yaml` 전체를 `deploy` 브랜치로 복사한 뒤 이미지 태그를 갱신합니다. Portainer의 Git Stack은 갱신된 `deploy` 브랜치를 다시 배포해야 새 환경 변수 매핑을 적용합니다.
 
 ## 9. 운영 점검
+
+### YouTube 할당량 수집
+
+관리자 메뉴의 **YouTube 사용량**(`/admin/youtube`)에서 오늘의 추정 사용량, 기능별 요청·실패 수, 최근 7일 추이를 확인합니다. 조회 API는 운영자만 접근할 수 있는 `GET /api/admin/youtube-usage`이며 응답은 캐시하지 않습니다. 30초마다 갱신하고 각 버킷 80% 이상에서 경고를 표시합니다. 환경 변수의 한도는 표시·추정용으로만 사용하며 요청을 차단하지 않습니다.
+
+실제 전송한 `search.list`는 검색 버킷, `videos.list`·`channels.list`·`playlists.list`·`playlistItems.list`는 일반 조회 버킷에 요청당 1단위를 계산합니다. API 키와 OAuth 동기화 양쪽 경로를 수집하며, 재시도·추가 페이지도 각각 집계합니다. 실패 요청을 포함하는 보수적인 추정치이고 네트워크 오류·응답 대기는 불확실한 요청으로 별도 표시합니다. 영상 재생·OAuth 토큰 발급·갱신은 집계하지 않습니다. 분류 기준은 [YouTube 공식 할당량 문서](https://developers.google.com/youtube/data/determine_quota_cost)를 따릅니다.
+
+API 키와 Google OAuth가 같은 프로젝트라는 가정으로 합산하므로 서로 다른 프로젝트를 사용하거나 다른 앱·서버가 같은 프로젝트를 쓰면 Google 콘솔과 차이가 납니다. 최종 사용량은 Google Cloud 콘솔에서 확인합니다. 한도를 증액했다면 운영 Compose에도 전달되는 위 환경 변수를 조정합니다.
+
+태평양 시간(`America/Los_Angeles`) 자정에 날짜가 바뀌며 서머타임을 반영합니다. DB 스키마 16은 기존 데이터를 유지하며 자동 업그레이드됩니다. 수집 시작 이전 사용량은 복원할 수 없고 시작 당일은 부분 집계입니다. 일별·기능별·API 메서드별 합계만 90일 보관하며, 검색어·영상 ID·사용자 ID·API 키·OAuth 토큰은 저장하지 않습니다. 서버 재시작 후에도 집계는 유지됩니다.
 
 ### 상태 확인
 

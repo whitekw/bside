@@ -529,6 +529,8 @@ export function RoomPage() {
             </div>
             {participant && (
               <SongRequestDialog
+                code={code}
+                participantToken={participantToken}
                 open={requestSongOpen}
                 onClose={() => setRequestSongOpen(false)}
                 onAddSong={addSong}

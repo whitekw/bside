@@ -223,6 +223,7 @@ type RoomEvent = {
 | POST | `/api/auth/logout` | 로그인 선택 | 변경 | 현재 세션 삭제 및 해당 세션의 실시간 연결 종료 |
 | GET | `/api/admin/session` | 시스템 운영자 | 없음 | 운영자 프로필 |
 | GET | `/api/admin/overview?dayStarts=<15개의 쉼표 구분 Unix ms>` | 시스템 운영자 | 없음 | 사용자·방·재생 현황, 브라우저 현지 날짜별 14일 추이 (`daily[].startAt`), 서비스 설정 상태 |
+| GET | `/api/admin/youtube-usage` | 시스템 운영자 | 없음 | YouTube Data API 추정 사용량·기능별 요청·최근 7일 추이 |
 | GET | `/api/admin/rooms?query=&page=1` | 시스템 운영자 | 없음 | 방 검색, 20건 단위 페이지 |
 | GET | `/api/admin/rooms/:code` | 시스템 운영자 | 없음 | 방 상세, 최근 참여자·곡 |
 | GET | `/api/admin/rooms/:code/participants?query=&page=1` | 시스템 운영자 | 없음 | 퇴장 이력을 포함한 참여자 검색, 20건 단위 페이지 |
@@ -269,6 +270,7 @@ type RoomEvent = {
 | GET | `/api/rooms/:code/messages` | 참여자 | 없음 | 최근 대화·활동 로그 각각 최대 100개 |
 | POST | `/api/rooms/:code/messages` | 참여자 | 분당 30회(계정 또는 참여자 토큰 기준), IP·경로당 120회 | `ChatMessage` |
 | GET | `/api/youtube/search` | 공개 | 검색 | 검색 결과 |
+| GET | `/api/rooms/:code/search` | 참여자 | 검색 | 방 재생 기록을 우선하는 검색 결과, `previouslyPlayed` 표시 포함 |
 | POST | `/api/rooms/:code/songs` | 참여자 | 변경 | `RoomState` |
 | GET | `/api/rooms/:code/songs/:songId/vote` | 참여자 | 없음 | 본인의 `{ "vote": "up" \| "down" \| null, "canVote": boolean }` |
 | POST | `/api/rooms/:code/songs/:songId/vote` | 참여자 | 변경 | `RoomState` |
@@ -296,6 +298,19 @@ type RoomEvent = {
 확장 프로그램 로그인 시작 요청에는 `redirect_uri=https://{등록된 확장 ID}.chromiumapp.org/bside`, 임의의 `state`, SHA-256 PKCE `code_challenge`를 전달합니다. Discord 인증 후 서버는 해당 주소로 `grant`와 `state`를 반환합니다. `POST /api/extension/auth/exchange`의 JSON 본문은 `{ "grant": "...", "codeVerifier": "..." }`입니다. 이후 확장 프로그램 API에는 `Authorization: Bearer {token}`을 보냅니다. 영상 추가 본문은 `{ "videoId": "YouTube 영상 ID" }`입니다. 확장 프로그램 토큰만으로 일반 웹사이트 API의 쿠키 로그인·호스트 제어 권한을 얻을 수 없습니다.
 
 ## 5. 시스템 및 설정
+
+### `GET /api/admin/youtube-usage`
+
+운영자 로그인과 `ADMIN_DISCORD_IDS` 검사를 거치며 `Cache-Control: no-store`로 응답합니다. `estimated: true`는 이 서버가 보낸 요청 기준 추정치임을 나타냅니다.
+
+- `day`, `timeZone`: 태평양 날짜와 `America/Los_Angeles`.
+- `startedAt`, `generatedAt`, `resetsAt`: 수집 시작·조회·다음 자정의 Unix ms. 시작일은 부분 집계입니다.
+- `buckets.search`, `buckets.data`: 각각 `used`, `limit`, `remaining`, `percent`. 잔여 추정치는 0 이상이며 사용률은 100%를 넘을 수 있습니다.
+- `totals`: 오늘의 `requests`, `searchUnits`, `dataUnits`, `errors`, `uncertain`, `quotaErrors`, `lastQuotaErrorAt`(Unix ms 또는 `null`). `errors`는 HTTP·네트워크 실패, `uncertain`은 네트워크 실패·미완료 요청으로 실제 차감 여부가 불확실한 건수입니다.
+- `daily`: 최근 7일의 `day`, `collecting`과 같은 집계 필드. 수집 시작 전 날짜는 `collecting: false`입니다.
+- `features`: `source`, `label`과 오늘의 집계 필드. 검색·곡 정보 조회·계정 연결·재생목록 조회·동기화로 분류합니다.
+
+검색어·사용자·영상 ID·토큰은 응답에 포함하지 않습니다. 요청당 1단위로 계산하며 Google 프로젝트 전체 사용량과는 차이가 날 수 있습니다. 집계 정책·한도 설정은 `OPERATIONS.md`의 YouTube 할당량 수집 절을 참고합니다.
 
 ### `GET /api/health`
 
@@ -479,6 +494,14 @@ Cloudflare의 `CF-IPCountry`와 `Accept-Language`를 이용해 초기 언어를 
 건너뛰기·대기열 삭제·순서 변경·전체 일시정지/재개·관리자 지정/해제도 `RoomEvent`로 저장되어 같은 `chat:message` 이벤트로 전달됩니다. 곡 추가는 대기열에 신청자가 표시되므로 활동 로그를 생성하지 않습니다. 입장·퇴장은 채팅 피드에 기록하지 않으며, 이전 버전에서 저장된 입장·퇴장 로그도 조회 결과에서 제외합니다.
 
 ## 8. YouTube 조회
+
+### `GET /api/rooms/:code/search?q={query}`
+
+방 참여자 인증(`x-participant-token` 또는 로그인한 방 참여 계정)이 필요합니다. 이 경로와 `/api/youtube/search`는 방 코드·경로에 관계없이 같은 IP당 분당 30회의 검색 제한을 공유합니다. 검색어는 공백 제거 후 `2..100`자 또는 지원하는 YouTube URL/영상 ID입니다.
+
+현재 방의 완료된 재생 기록에서 검색어의 각 단어가 제목·아티스트·영상 ID 중 하나에 포함된 영상을 먼저 반환합니다. 같은 영상의 기록은 최신 메타데이터로 합치며, 기록에서만 찾는 영상은 최대 30개입니다. YouTube 검색 결과에 포함된 기존 재생 영상도 위로 올립니다. 기록 영상 사이에서는 최근 재생 순, 나머지는 YouTube 검색 순서를 유지하며 같은 영상은 한 번만 반환합니다. 현재 곡·대기열·삭제 및 재생 실패 건은 기록 검색 대상에서 제외합니다. 정상 재생 기록에 남은 빠른 스킵·자동 재생 건은 포함합니다.
+
+응답 형식은 아래 YouTube 검색과 같으며 기록에서 찾은 항목에는 `previouslyPlayed: true`가 추가됩니다. 겹치는 영상의 정보·외부 재생 가능 여부는 YouTube 응답을 우선합니다. 기록에서만 찾는 영상은 저장된 정보를 사용하며 실제 신청 시 서버에서 YouTube 정보를 다시 검증합니다. 다른 방의 기록은 포함하지 않습니다.
 
 ### `GET /api/youtube/search?q={query}`
 

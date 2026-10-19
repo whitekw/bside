@@ -190,6 +190,17 @@ async function verifyAdminApi(publicOrigin = '') {
     assert.equal(overview.totals.rooms, 1)
     assert.equal(overview.daily[0].startAt, dayStarts[0])
     assert.equal((await fetch(`${baseUrl}/api/admin/rooms/${room.code}`, { headers: adminHeaders })).status, 200)
+    const usageUrl = `${baseUrl}/api/admin/youtube-usage`
+    assert.equal((await fetch(usageUrl)).status, 401)
+    assert.equal((await fetch(usageUrl, {headers:memberHeaders})).status, 403)
+    const usageResponse = await fetch(usageUrl, {headers:adminHeaders})
+    assert.equal(usageResponse.status, 200)
+    assert.equal(usageResponse.headers.get('cache-control'), 'no-store')
+    const usage = await usageResponse.json()
+    assert.equal(usage.estimated, true)
+    assert.equal(usage.timeZone, 'America/Los_Angeles')
+    assert.equal(usage.daily.length, 7)
+    assert.equal(usage.buckets.search.limit, 100)
     const playlistsUrl = `${baseUrl}/api/admin/users/member/playlists`
     const tracksUrl = `${playlistsUrl}/member-favorites/tracks`
     for (const url of [playlistsUrl, tracksUrl]) {

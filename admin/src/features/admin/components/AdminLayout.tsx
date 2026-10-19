@@ -8,6 +8,7 @@ const links = [
   { to: '/', label: '개요', icon: LayoutDashboard, end: true },
   { to: '/rooms', label: '방', icon: DoorOpen },
   { to: '/users', label: '사용자', icon: Users },
+  { to: '/youtube', label: 'YouTube 사용량', icon: Activity },
   { to: '/audit', label: '운영 기록', icon: History },
 ]
 

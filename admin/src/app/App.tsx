@@ -8,6 +8,7 @@ import type { AdminUser } from '../features/admin/types'
 import { ApiError } from '../shared/http'
 
 const AuditPage = lazy(() => import('../features/admin/pages/AuditPage').then(({ AuditPage }) => ({ default: AuditPage })))
+const YouTubeUsagePage = lazy(() => import('../features/admin/pages/YouTubeUsagePage').then(({ YouTubeUsagePage }) => ({ default: YouTubeUsagePage })))
 const OverviewPage = lazy(() => import('../features/admin/pages/OverviewPage').then(({ OverviewPage }) => ({ default: OverviewPage })))
 const RoomDetailPage = lazy(() => import('../features/admin/pages/RoomDetailPage').then(({ RoomDetailPage }) => ({ default: RoomDetailPage })))
 const RoomsPage = lazy(() => import('../features/admin/pages/RoomsPage').then(({ RoomsPage }) => ({ default: RoomsPage })))
@@ -72,6 +73,7 @@ function SessionGate() {
       <Route path="users" element={<UsersPage currentUserId={session.user.id} />} />
       <Route path="users/:userId/playlists" element={<UserPlaylistsPage />} />
       <Route path="audit" element={<AuditPage />} />
+      <Route path="youtube" element={<YouTubeUsagePage />} />
       <Route path="*" element={<OverviewPage />} />
     </Route>
   </Routes></Suspense>

@@ -25,9 +25,14 @@ function createYouTubeSync(db, options = {}) {
     decipher.setAuthTag(bytes.subarray(12, 28))
     return JSON.parse(Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString())
   }
-  async function remote(url, init = {}) {
+  async function remote(url, init = {}, source) {
     let response
-    try { response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(15000) }) }
+    try {
+      const request = { ...init, signal: AbortSignal.timeout(15000) }
+      response = source && options.usage
+        ? await options.usage.trackFetch(fetchImpl, source, new URL(url).pathname.split('/').at(-1), url, request)
+        : await fetchImpl(url, request)
+    }
     catch { throw new AppError(502, 'YouTube에 연결하지 못했습니다.', 'YOUTUBE_UNAVAILABLE') }
     const body = await response.json().catch(() => ({}))
     if (!response.ok) throw new AppError(response.status === 401 || body.error === 'invalid_grant' ? 401 : 502,
@@ -59,7 +64,7 @@ function createYouTubeSync(db, options = {}) {
     if (!token.access_token || !token.refresh_token || !(token.scope ?? '').split(' ').includes(SCOPE)) {
       throw new AppError(403, 'YouTube 읽기 권한을 허용해주세요.', 'YOUTUBE_RECONNECT_REQUIRED')
     }
-    const channel = await api(token.access_token, 'channels', { mine: 'true', part: 'snippet', maxResults: '1' })
+    const channel = await api(token.access_token, 'channels', { mine: 'true', part: 'snippet', maxResults: '1' }, 'account_link')
     const item = channel.items?.[0]
     if (!item) throw new AppError(400, 'YouTube 채널을 찾지 못했습니다.', 'YOUTUBE_CHANNEL_REQUIRED')
     transaction(db, () => {
@@ -93,10 +98,10 @@ function createYouTubeSync(db, options = {}) {
     }
     return { token: token.access, channelId: row.channel_id }
   }
-  function api(token, path, params) {
+  function api(token, path, params, source = 'playlist_sync') {
     const url = new URL(`https://www.googleapis.com/youtube/v3/${path}`)
     url.search = new URLSearchParams(params).toString()
-    return remote(url, { headers: { Authorization: `Bearer ${token}` } })
+    return remote(url, { headers: { Authorization: `Bearer ${token}` } }, source)
   }
   function status(userId) {
     const row = db.prepare('SELECT channel_title FROM youtube_connections WHERE user_id = ?').get(userId)
@@ -107,7 +112,7 @@ function createYouTubeSync(db, options = {}) {
   async function list(userId, pageToken = '') {
     const { token } = await access(userId)
     if (typeof pageToken !== 'string' || pageToken.length > 1024) throw new AppError(400, '페이지가 올바르지 않습니다.', 'INVALID_YOUTUBE_SELECTION')
-    const result = await api(token, 'playlists', { mine: 'true', part: 'snippet,contentDetails', maxResults: '50', ...(pageToken ? { pageToken } : {}) })
+    const result = await api(token, 'playlists', { mine: 'true', part: 'snippet,contentDetails', maxResults: '50', ...(pageToken ? { pageToken } : {}) }, 'playlist_list')
     return { items: (result.items ?? []).map(p => ({ id: p.id, title: p.snippet.title, trackCount: p.contentDetails.itemCount,
       thumbnailUrl: p.snippet.thumbnails?.medium?.url ?? null })), nextPageToken: result.nextPageToken ?? null }
   }
