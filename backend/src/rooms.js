@@ -717,6 +717,38 @@ function createRoomService(db, options = {}) {
     }
   }
 
+  function getSearchHistory(code, credentials, query, videoIds = []) {
+    const room = getRoomRecord(code)
+    requireParticipant(room, credentials?.participantToken, credentials?.userId)
+    const directVideoId = extractYouTubeVideoId(query)
+    if (typeof query !== 'string' || (!directVideoId && (query.trim().length < 2 || query.trim().length > 100))) {
+      throw new AppError(400, '검색어는 2자 이상 100자 이하여야 합니다.', 'INVALID_QUERY')
+    }
+    const ids = [...new Set(videoIds)].slice(0, 50)
+    const words = directVideoId ? [] : query.trim().split(/\s+/)
+    const match = directVideoId ? 'video_id = ?' : words.map(() =>
+      '(instr(lower(title), lower(?)) > 0 OR instr(lower(artist), lower(?)) > 0 OR instr(lower(video_id), lower(?)) > 0)',
+    ).join(' AND ')
+    return db.prepare(`
+      WITH history AS (
+        SELECT video_id, title, artist, duration_seconds, thumbnail_url, started_at, rowid AS song_rowid,
+          ROW_NUMBER() OVER (PARTITION BY video_id ORDER BY started_at DESC, rowid DESC) AS rank
+        FROM songs WHERE room_id = ? AND status = 'played' AND started_at IS NOT NULL
+      ), matches AS (
+        SELECT video_id FROM history WHERE rank = 1 AND (${match})
+        ORDER BY started_at DESC, song_rowid DESC LIMIT 30
+      )
+      SELECT * FROM history WHERE rank = 1 AND (video_id IN (SELECT video_id FROM matches)
+        ${ids.length ? `OR video_id IN (${ids.map(() => '?').join(', ')})` : ''})
+      ORDER BY started_at DESC, song_rowid DESC
+    `).all(room.id, ...(directVideoId ? [directVideoId] : words.flatMap(word => [word, word, word])),
+      ...ids).map(row => ({
+      videoId: row.video_id, title: row.title, artist: row.artist,
+      durationSeconds: row.duration_seconds, thumbnailUrl: row.thumbnail_url,
+      embeddable: true, previouslyPlayed: true,
+    }))
+  }
+
   function getRoomHistory(code, credentials, before = null, limit = ROOM_HISTORY_PAGE_SIZE, requesterIds = [], query = '') {
     const room = getRoomRecord(code)
     requireParticipant(room, credentials?.participantToken, credentials?.userId)
@@ -1966,6 +1998,7 @@ function createRoomService(db, options = {}) {
     getPublicRoom,
     getRoomStats,
     getRoomHistory,
+    getSearchHistory,
     listAutoplayHistoryVideos,
     getSongVote,
     setSongVote,

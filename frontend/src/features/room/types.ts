@@ -178,6 +178,7 @@ export type ChatMessage =
     })
 
 export type VideoSearchResult = {
+  previouslyPlayed?: boolean
   videoId: string
   title: string
   artist: string

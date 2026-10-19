@@ -19,6 +19,7 @@ const { createRateLimiter } = require('./rate-limit')
 const { createRoomService, normalizeCode } = require('./rooms')
 const { createLibraryService } = require('./library')
 const { createYouTubeService } = require('./youtube')
+const { searchRoomVideos } = require('./roomVideoSearch')
 const { createAdminService } = require('./admin')
 const { createAccountService } = require('./account')
 const { createYouTubeSync } = require('./youtubeSync')
@@ -762,6 +763,10 @@ app.get('/api/rooms/:code/history', (req, res) => {
     req.query.requesterId ?? [], req.query.q ?? '',
   ))
 })
+
+app.get('/api/rooms/:code/search', searchLimiter, asyncRoute(async (req, res) => {
+  res.json({ items: await searchRoomVideos(rooms, youtube, req.params.code, controlCredentials(req), req.query.q) })
+}))
 
 app.get('/api/rooms/:code/autoplay/history-videos', (req, res) => {
   const user = requireAuthUser(req)

@@ -7,13 +7,15 @@ import type { VideoSearchResult } from '../types'
 import { VideoResultList } from './VideoResultList'
 
 type SearchPanelProps = {
+  code: string
+  participantToken: string
   onAddSong: (videoId: string) => Promise<void>
   queuedVideoIds: ReadonlySet<string>
   currentVideoId: string | null
   className?: string
 }
 
-export function SearchPanel({ onAddSong, queuedVideoIds, currentVideoId, className }: SearchPanelProps) {
+export function SearchPanel({ code, participantToken, onAddSong, queuedVideoIds, currentVideoId, className }: SearchPanelProps) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<VideoSearchResult[]>([])
@@ -36,7 +38,7 @@ export function SearchPanel({ onAddSong, queuedVideoIds, currentVideoId, classNa
     setSearchEmpty(false)
     setResults([])
     try {
-      const response = await roomApi.searchVideos(query)
+      const response = await roomApi.searchVideos(code, participantToken, query)
       if (!mounted.current) return
       setResults(response.items)
       setSearchEmpty(response.items.length === 0)
