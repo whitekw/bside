@@ -98,7 +98,12 @@ app.disable('x-powered-by')
 app.use('/api/account/profile', express.json({ limit: '300kb' }))
 app.use(express.json({ limit: '32kb' }))
 
-const searchLimiter = createRateLimiter({ windowMs: 60_000, limit: 30 })
+const searchLimiter = createRateLimiter({
+  windowMs: 60_000,
+  limit: 30,
+  // All YouTube-backed searches share one budget, including different rooms.
+  keyForRequest: (req) => req.ip,
+})
 const mutationLimiter = createRateLimiter({ windowMs: 60_000, limit: 120 })
 const authLimiter = createRateLimiter({ windowMs: 60_000, limit: 30 })
 const chatLimiter = createRateLimiter({
