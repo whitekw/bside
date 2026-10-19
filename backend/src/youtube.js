@@ -53,7 +53,7 @@ function isPlayableVideo(item) {
   )
 }
 
-function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
+function createYouTubeService(apiKey, { fetchImpl = fetch, usage } = {}) {
   const baseUrl = 'https://www.googleapis.com/youtube/v3'
 
   function assertConfigured() {
@@ -66,7 +66,7 @@ function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
     }
   }
 
-  async function youtubeFetch(pathname, params) {
+  async function youtubeFetch(pathname, params, source) {
     assertConfigured()
     const url = new URL(`${baseUrl}/${pathname}`)
     Object.entries({ ...params, key: apiKey }).forEach(([key, value]) => {
@@ -75,7 +75,8 @@ function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
 
     let response
     try {
-      response = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) })
+      const init = { signal: AbortSignal.timeout(10_000) }
+      response = usage ? await usage.trackFetch(fetchImpl, source, pathname, url, init) : await fetchImpl(url, init)
     } catch {
       throw new AppError(502, 'YouTube에 연결하지 못했습니다.', 'YOUTUBE_UNAVAILABLE')
     }
@@ -110,22 +111,22 @@ function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
     }
   }
 
-  async function getVideos(videoIds) {
+  async function getVideos(videoIds, source) {
     const uniqueIds = [...new Set(videoIds)].filter(Boolean).slice(0, 50)
     if (uniqueIds.length === 0) return []
     const result = await youtubeFetch('videos', {
       part: 'snippet,contentDetails,status',
       id: uniqueIds.join(','),
-    })
+    }, source)
     return (result.items ?? []).filter(isPlayableVideo).map(mapVideo)
   }
 
-  async function getVideo(input) {
+  async function getVideo(input, source = 'video_lookup') {
     const videoId = extractYouTubeVideoId(input)
     if (!videoId) {
       throw new AppError(400, '올바른 YouTube 영상 URL 또는 ID가 아닙니다.', 'INVALID_VIDEO')
     }
-    const [video] = await getVideos([videoId])
+    const [video] = await getVideos([videoId], source)
     if (!video) {
       throw new AppError(
         404,
@@ -138,7 +139,7 @@ function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
 
   async function search(query) {
     const directVideoId = extractYouTubeVideoId(query)
-    if (directVideoId) return [await getVideo(directVideoId)]
+    if (directVideoId) return [await getVideo(directVideoId, 'search')]
 
     const normalizedQuery = String(query ?? '').trim()
     if (normalizedQuery.length < 2 || normalizedQuery.length > 100) {
@@ -153,9 +154,9 @@ function createYouTubeService(apiKey, { fetchImpl = fetch } = {}) {
       safeSearch: 'moderate',
       maxResults: 15,
       q: normalizedQuery,
-    })
+    }, 'search')
     const ids = (result.items ?? []).map((item) => item.id?.videoId).filter(Boolean)
-    return getVideos(ids)
+    return getVideos(ids, 'search')
   }
 
   return { search, getVideo }

@@ -2,6 +2,8 @@
 
 계정 관리(`/account`)는 `auth` 기능의 전용 페이지와 `/api/account` API로 구성됩니다. DB 스키마 15는 `users.custom_name/custom_avatar`, `youtube_connections`, `youtube_playlist_links`를 추가합니다. 로그인 시 Discord 원본 정보가 갱신되어도 B-SIDE에서 저장한 커스텀 프로필은 유지하며, 수동 Discord 재인증은 연결된 사용자 ID를 검증한 뒤 커스텀 프로필을 제거합니다.
 
+DB 스키마 16은 `youtube_api_usage`의 태평양 날짜·기능·API 메서드별 합계와 `youtube_usage_state`의 수집 시작 시각을 추가합니다. `youtubeUsage.js`가 `youtube.js`와 `youtubeSync.js`의 실제 Data API 전송 경로를 감싸며, 관리자 전용 `/api/admin/youtube-usage`와 `/admin/youtube`에서 추정치를 조회합니다. OAuth 토큰 요청과 IFrame 재생은 포함하지 않고 자격 증명·검색어·사용자별 로그를 저장하지 않습니다.
+
 `youtubeSync.js`는 Google 읽기 전용 OAuth·PKCE, 세션에 묶인 인증 상태, AES-256-GCM 토큰 저장, 토큰 갱신, 본인 채널 목록 조회와 선택 목록 수동 가져오기를 담당합니다. 계정 단위로 동기화를 직렬화하고, 외부 조회가 모두 끝난 후 연결이 그대로인지 확인하여 단일 DB 트랜잭션으로 기존 개인 목록을 교체합니다. 기존 `library`와 같은 테이블을 쓰므로 방의 개인 플레이리스트에서 바로 사용할 수 있습니다. Google 환경 변수가 없으면 기존 Discord 로그인과 계정 관리는 그대로 제공하고 YouTube 연결만 비활성화합니다.
 
 ## 1. 아키텍처 요약

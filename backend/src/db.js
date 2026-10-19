@@ -2,7 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { DatabaseSync } = require('node:sqlite')
 
-const SCHEMA_VERSION = 15
+const SCHEMA_VERSION = 16
 
 function createDatabase(databasePath = ':memory:') {
   if (databasePath !== ':memory:') {
@@ -17,7 +17,7 @@ function createDatabase(databasePath = ':memory:') {
   const hasExistingSchema = Boolean(db.prepare(
     "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
   ).get())
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, SCHEMA_VERSION].includes(version) && (version !== 0 || hasExistingSchema)) {
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, SCHEMA_VERSION].includes(version) && (version !== 0 || hasExistingSchema)) {
     db.close()
     throw new Error('기존 DB 스키마는 지원하지 않습니다. 데이터베이스 파일을 초기화한 뒤 다시 실행해주세요.')
   }
@@ -313,6 +313,19 @@ function createDatabase(databasePath = ':memory:') {
       playlist_id TEXT NOT NULL UNIQUE REFERENCES playlists(id) ON DELETE CASCADE,
       synced_at INTEGER NOT NULL, skipped_count INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (user_id, youtube_id)
+    );
+  `)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS youtube_usage_state (
+      id INTEGER PRIMARY KEY CHECK(id = 1), started_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS youtube_api_usage (
+      day TEXT NOT NULL, source TEXT NOT NULL, method TEXT NOT NULL,
+      requests INTEGER NOT NULL DEFAULT 0, successes INTEGER NOT NULL DEFAULT 0,
+      http_errors INTEGER NOT NULL DEFAULT 0, network_errors INTEGER NOT NULL DEFAULT 0,
+      quota_errors INTEGER NOT NULL DEFAULT 0, last_requested_at INTEGER NOT NULL,
+      last_quota_error_at INTEGER,
+      PRIMARY KEY (day, source, method)
     );
   `)
   db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`)

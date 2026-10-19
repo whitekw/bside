@@ -1,5 +1,5 @@
 import { request } from '../../shared/http'
-import type { AdminUser, AuditEntry, Overview, Page, RoomDetail, RoomSummary, RoomUserRecordsPreview, RoomVideo, RoomVideoRecordsPreview, UserSummary, UserPlaylistsPage, UserPlaylistTracksPage } from './types'
+import type { AdminUser, AuditEntry, Overview, Page, RoomDetail, RoomSummary, RoomUserRecordsPreview, RoomVideo, RoomVideoRecordsPreview, UserSummary, UserPlaylistsPage, UserPlaylistTracksPage, YouTubeUsage } from './types'
 
 const base = '/api/admin'
 
@@ -11,6 +11,7 @@ function localDayStarts() {
 
 export const adminApi = {
   session: (signal?: AbortSignal) => request<{ user: AdminUser }>(`${base}/session`, { signal }),
+  youtubeUsage: (signal?: AbortSignal) => request<YouTubeUsage>(`${base}/youtube-usage`, { signal }),
   overview: (signal?: AbortSignal) =>
     request<Overview>(`${base}/overview?dayStarts=${localDayStarts().join(',')}`, { signal }),
   rooms: (query: string, page: number, signal?: AbortSignal) =>

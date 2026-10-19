@@ -23,6 +23,7 @@ const { searchRoomVideos } = require('./roomVideoSearch')
 const { createAdminService } = require('./admin')
 const { createAccountService } = require('./account')
 const { createYouTubeSync } = require('./youtubeSync')
+const { createYouTubeUsage } = require('./youtubeUsage')
 
 const port = Number(process.env.PORT ?? 3001)
 const databasePath = process.env.DATABASE_PATH ?? './data/jukebox.sqlite'
@@ -65,15 +66,20 @@ const googleFlowCookie = 'jukebox_google_flow'
 const oauthStateMaxAgeSeconds = 10 * 60
 
 const db = createDatabase(databasePath)
+const youtubeUsage = createYouTubeUsage(db, {
+  searchDailyLimit: process.env.YOUTUBE_SEARCH_DAILY_LIMIT,
+  dataDailyLimit: process.env.YOUTUBE_DATA_DAILY_LIMIT,
+})
 const rooms = createRoomService(db)
 const library = createLibraryService(db)
 const account = createAccountService(db)
 const youtubeSync = createYouTubeSync(db, {
   clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   redirectUri: process.env.GOOGLE_REDIRECT_URI, encryptionKey: process.env.OAUTH_TOKEN_ENCRYPTION_KEY,
+  usage: youtubeUsage,
 })
 rooms.markAllParticipantsOffline()
-const youtube = createYouTubeService(process.env.YOUTUBE_API_KEY)
+const youtube = createYouTubeService(process.env.YOUTUBE_API_KEY, { usage: youtubeUsage })
 const auth = createDiscordAuth(db, {
   clientId: process.env.DISCORD_CLIENT_ID,
   clientSecret: process.env.DISCORD_CLIENT_SECRET,
@@ -290,6 +296,10 @@ function requireAdminAction(req) {
 
 app.get('/api/admin/session', (req, res) => {
   res.json({ user: req.adminUser })
+})
+
+app.get('/api/admin/youtube-usage', (req, res) => {
+  res.json(youtubeUsage.snapshot())
 })
 
 app.get('/api/admin/overview', (req, res) => {
@@ -1225,6 +1235,7 @@ app.use((error, _req, res, _next) => {
 auth.deleteExpiredSessions()
 extensionAuth.deleteExpiredSessions()
 const cleanupTimer = setInterval(() => {
+  youtubeUsage.cleanup()
   auth.deleteExpiredSessions()
   extensionAuth.deleteExpiredSessions()
 }, 60 * 1000)

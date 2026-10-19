@@ -223,6 +223,7 @@ type RoomEvent = {
 | POST | `/api/auth/logout` | 로그인 선택 | 변경 | 현재 세션 삭제 및 해당 세션의 실시간 연결 종료 |
 | GET | `/api/admin/session` | 시스템 운영자 | 없음 | 운영자 프로필 |
 | GET | `/api/admin/overview?dayStarts=<15개의 쉼표 구분 Unix ms>` | 시스템 운영자 | 없음 | 사용자·방·재생 현황, 브라우저 현지 날짜별 14일 추이 (`daily[].startAt`), 서비스 설정 상태 |
+| GET | `/api/admin/youtube-usage` | 시스템 운영자 | 없음 | YouTube Data API 추정 사용량·기능별 요청·최근 7일 추이 |
 | GET | `/api/admin/rooms?query=&page=1` | 시스템 운영자 | 없음 | 방 검색, 20건 단위 페이지 |
 | GET | `/api/admin/rooms/:code` | 시스템 운영자 | 없음 | 방 상세, 최근 참여자·곡 |
 | GET | `/api/admin/rooms/:code/participants?query=&page=1` | 시스템 운영자 | 없음 | 퇴장 이력을 포함한 참여자 검색, 20건 단위 페이지 |
@@ -297,6 +298,19 @@ type RoomEvent = {
 확장 프로그램 로그인 시작 요청에는 `redirect_uri=https://{등록된 확장 ID}.chromiumapp.org/bside`, 임의의 `state`, SHA-256 PKCE `code_challenge`를 전달합니다. Discord 인증 후 서버는 해당 주소로 `grant`와 `state`를 반환합니다. `POST /api/extension/auth/exchange`의 JSON 본문은 `{ "grant": "...", "codeVerifier": "..." }`입니다. 이후 확장 프로그램 API에는 `Authorization: Bearer {token}`을 보냅니다. 영상 추가 본문은 `{ "videoId": "YouTube 영상 ID" }`입니다. 확장 프로그램 토큰만으로 일반 웹사이트 API의 쿠키 로그인·호스트 제어 권한을 얻을 수 없습니다.
 
 ## 5. 시스템 및 설정
+
+### `GET /api/admin/youtube-usage`
+
+운영자 로그인과 `ADMIN_DISCORD_IDS` 검사를 거치며 `Cache-Control: no-store`로 응답합니다. `estimated: true`는 이 서버가 보낸 요청 기준 추정치임을 나타냅니다.
+
+- `day`, `timeZone`: 태평양 날짜와 `America/Los_Angeles`.
+- `startedAt`, `generatedAt`, `resetsAt`: 수집 시작·조회·다음 자정의 Unix ms. 시작일은 부분 집계입니다.
+- `buckets.search`, `buckets.data`: 각각 `used`, `limit`, `remaining`, `percent`. 잔여 추정치는 0 이상이며 사용률은 100%를 넘을 수 있습니다.
+- `totals`: 오늘의 `requests`, `searchUnits`, `dataUnits`, `errors`, `uncertain`, `quotaErrors`, `lastQuotaErrorAt`(Unix ms 또는 `null`). `errors`는 HTTP·네트워크 실패, `uncertain`은 네트워크 실패·미완료 요청으로 실제 차감 여부가 불확실한 건수입니다.
+- `daily`: 최근 7일의 `day`, `collecting`과 같은 집계 필드. 수집 시작 전 날짜는 `collecting: false`입니다.
+- `features`: `source`, `label`과 오늘의 집계 필드. 검색·곡 정보 조회·계정 연결·재생목록 조회·동기화로 분류합니다.
+
+검색어·사용자·영상 ID·토큰은 응답에 포함하지 않습니다. 요청당 1단위로 계산하며 Google 프로젝트 전체 사용량과는 차이가 날 수 있습니다. 집계 정책·한도 설정은 `OPERATIONS.md`의 YouTube 할당량 수집 절을 참고합니다.
 
 ### `GET /api/health`
 

@@ -6,6 +6,19 @@ export type AdminUser = {
   avatarUrl: string | null
 }
 
+export type YouTubeUsageTotals = {
+  requests: number; searchUnits: number; dataUnits: number; errors: number
+  uncertain: number; quotaErrors: number; lastQuotaErrorAt: number | null
+}
+
+export type YouTubeUsage = {
+  estimated: true; timeZone: string; day: string; startedAt: number; generatedAt: number; resetsAt: number
+  buckets: Record<'search' | 'data', { used: number; limit: number; remaining: number; percent: number }>
+  totals: YouTubeUsageTotals
+  daily: (YouTubeUsageTotals & { day: string; collecting: boolean })[]
+  features: (YouTubeUsageTotals & { source: string; label: string })[]
+}
+
 export type Overview = {
   totals: {
     users: number
