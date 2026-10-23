@@ -116,9 +116,9 @@ export function AutoplayFilterEditor({ code, excludedWords, onWordsChange, exclu
       {excludedWords.length === 0 ? <p className="mt-3 text-xs text-muted">{t('roomSettings.noWords')}</p>
         : <ul className="mt-3 flex flex-wrap gap-2" aria-label={t('roomSettings.excludedWords')}>
           {excludedWords.map((word) => <li key={word}
-            className="inline-flex min-w-0 items-center gap-1 rounded-lg border border-purple/25 bg-purple/10 py-1 pl-2.5 pr-1 text-xs text-purple-light">
+            className="inline-flex min-w-0 items-center gap-1 rounded-lg border border-accent/25 bg-accent/10 py-1 pl-2.5 pr-1 text-xs text-ink">
             <span className="max-w-48 truncate" title={word}>{word}</span>
-            <button type="button" className="grid size-6 shrink-0 place-items-center rounded-md hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-purple-light"
+            <button type="button" className="grid size-6 shrink-0 place-items-center rounded-md hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-accent-soft"
               aria-label={t('roomSettings.removeWord', { word })} onClick={() => onWordsChange(excludedWords.filter((item) => item !== word))}
               disabled={disabled}><X size={14} aria-hidden="true" /></button>
           </li>)}</ul>}
@@ -128,15 +128,15 @@ export function AutoplayFilterEditor({ code, excludedWords, onWordsChange, exclu
       <h4 className="text-sm font-semibold">{t('roomSettings.excludedVideos')}</h4>
       <p className="mt-1 text-xs leading-5 text-muted">{t('roomSettings.excludedVideosHint')}</p>
       {excludedVideoIds.length > 0 && <div className="mt-4">
-        <p className="mb-2 text-xs font-semibold text-purple-light">{t('roomSettings.selectedVideos', { count: excludedVideoIds.length })}</p>
+        <p className="mb-2 text-xs font-semibold text-ink">{t('roomSettings.selectedVideos', { count: excludedVideoIds.length })}</p>
         <ul className="max-h-48 space-y-2 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
           {excludedVideoIds.map((videoId) => {
             const video = metadata[videoId]
-            return <li key={videoId} className="flex min-w-0 items-center gap-3 rounded-lg border border-purple/25 bg-purple/10 p-2">
+            return <li key={videoId} className="flex min-w-0 items-center gap-3 rounded-lg border border-accent/25 bg-accent/10 p-2">
               {video?.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" className="h-10 w-[60px] shrink-0 rounded object-cover" />
                 : <span className="grid h-10 w-[60px] shrink-0 place-items-center rounded bg-white/5 text-muted"><Music2 size={17} /></span>}
               <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={video?.title ?? videoId}>{video?.title ?? videoId}</span>
-              <button type="button" className="grid size-8 shrink-0 place-items-center rounded-md text-muted hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-purple-light"
+              <button type="button" className="grid size-8 shrink-0 place-items-center rounded-md text-muted hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft"
                 aria-label={t('roomSettings.restoreVideo', { title: video?.title ?? videoId })}
                 onClick={() => toggleVideo(videoId)} disabled={disabled}><X size={16} aria-hidden="true" /></button>
             </li>
@@ -165,8 +165,8 @@ export function AutoplayFilterEditor({ code, excludedWords, onWordsChange, exclu
                 <p className="truncate text-xs font-semibold" title={video.title}>{video.title}</p>
                 <p className="mt-1 truncate text-[11px] text-muted">{video.artist} · {Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, '0')} · {new Date(video.startedAt).toLocaleDateString(locale)}</p>
               </div>
-              <button type="button" className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light',
-                selected ? 'text-lime hover:bg-lime/10' : 'text-purple-light hover:bg-purple/10')}
+              <button type="button" className={cn('inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft',
+                selected ? 'text-signal hover:bg-signal/10' : 'text-ink hover:bg-accent/10')}
                 aria-label={t(selected ? 'roomSettings.restoreVideo' : 'roomSettings.excludeVideo', { title: video.title })}
                 aria-pressed={selected} disabled={disabled || (!selected && excludedVideoIds.length >= 100)}
                 onClick={() => toggleVideo(video.videoId)}>

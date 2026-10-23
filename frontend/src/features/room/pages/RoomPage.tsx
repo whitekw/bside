@@ -9,7 +9,7 @@ import {
   type FormEvent,
 } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, History, Menu, WifiOff } from 'lucide-react'
+import { History, Menu, PanelRightOpen, WifiOff } from 'lucide-react'
 import { roomApi } from '../api'
 import { Brand } from '../../../shared/ui/Brand'
 import { AccountMenu } from '../../auth/components/AccountMenu'
@@ -93,7 +93,7 @@ export function RoomPage() {
   const [statsOpen, setStatsOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDraft, setSettingsDraft] = useState<RoomSettingsDraft | null>(null)
-  const [queueOpen, setQueueOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
+  const [queueOpen, setQueueOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
   const [queuePeek, setQueuePeek] = useState(false)
   const [selectedPlaylist, setSelectedPlaylist] = useState<{ userId: string; playlist: Playlist } | null>(null)
   const [libraryRevision, setLibraryRevision] = useState(0)
@@ -117,7 +117,7 @@ export function RoomPage() {
     setSelectedPlaylist(null)
     setStatsOpen(false)
     setSettingsOpen(false)
-    if (window.matchMedia('(max-width: 639px)').matches) {
+    if (window.matchMedia('(max-width: 1023px)').matches) {
       setQueueOpen(false)
       setQueuePeek(false)
     }
@@ -134,7 +134,7 @@ export function RoomPage() {
     setRequestSongOpen(false)
     setSelectedPlaylist(null)
     setSettingsOpen(false)
-    if (window.matchMedia('(max-width: 639px)').matches) {
+    if (window.matchMedia('(max-width: 1023px)').matches) {
       setQueueOpen(false)
       setQueuePeek(false)
     }
@@ -327,18 +327,6 @@ export function RoomPage() {
   const currentAudioSettings = audioSettings ?? readPlayerAudioSettings(
     room.playbackMode === 'host_only' ? room.hostVolume : 100,
   )
-  const playbackStatus = !room.currentSong
-    ? 'waiting'
-    : room.playbackPaused || (room.playbackMode === 'host_only' && room.playbackBlocked)
-      ? 'paused'
-      : room.playbackPending
-        ? 'waiting'
-        : 'playing'
-  const playbackStatusLabel = playbackStatus === 'playing'
-    ? t('status.nowPlaying')
-    : playbackStatus === 'paused'
-      ? t('status.paused')
-      : t('status.waiting')
   const playbackSynchronization = {
     positionSeconds: room.playbackPositionSeconds,
     anchorAt: room.playbackAnchorAt,
@@ -358,24 +346,13 @@ export function RoomPage() {
   }
 
   return (
-    <main className="flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas bg-[radial-gradient(circle_at_15%_20%,rgba(96,72,163,.17),transparent_30%)]">
+    <main className="listening-room flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas">
       <header data-desktop-titlebar className="relative z-[60] flex w-full shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line px-4 py-3 md:py-4">
         <div className="flex min-w-0 items-center gap-5">
-          <Brand className="gap-2 text-base tracking-[0.14em] max-[380px]:[&>span]:hidden md:gap-3 md:text-lg md:tracking-[0.18em]" />
-          <div className="flex min-w-0 items-center gap-2 border-l border-line pl-3 font-mono text-xs tracking-[0.08em] text-muted sm:pl-5">
-            <span
-              className={cn(
-                'size-[7px] shrink-0 rounded-full',
-                playbackStatus === 'playing' && 'bg-lime shadow-[0_0_0_4px_rgba(215,255,100,.08),0_0_12px_rgba(215,255,100,.45)]',
-                playbackStatus === 'paused' && 'bg-yellow-400 shadow-[0_0_0_4px_rgba(250,204,21,.08),0_0_12px_rgba(250,204,21,.35)]',
-                playbackStatus === 'waiting' && 'bg-dim',
-              )}
-              role="img"
-              aria-label={playbackStatusLabel}
-              title={playbackStatusLabel}
-            />
-            <span className="max-w-[min(36vw,380px)] truncate text-ink" title={room.title}>{room.title}</span>
-            <span className="hidden shrink-0 sm:inline">· {code}</span>
+          <Brand className="gap-2 text-base max-[380px]:[&>span]:hidden md:gap-2.5 md:text-lg" />
+          <div className="flex min-w-0 items-center gap-2.5 border-l border-line pl-3 text-sm text-muted sm:pl-5">
+            <h1 className="max-w-[min(36vw,380px)] truncate text-sm font-medium text-ink" title={room.title}>{room.title}</h1>
+            <span className="hidden shrink-0 text-xs tabular-nums sm:inline">{code}</span>
           </div>
         </div>
         <div data-desktop-no-drag className="ml-auto flex shrink-0 items-center gap-2">
@@ -436,7 +413,7 @@ export function RoomPage() {
                 : undefined}
             />
           </div>
-          <button type="button" className={cn(chromeIconButtonStyles, 'text-white sm:hidden')}
+          <button type="button" className={cn(chromeIconButtonStyles, 'text-white lg:hidden')}
             aria-label={t('room.openMenu')} title={t('room.openMenu')}
             aria-controls="room-queue-panel" aria-expanded={queueOpen}
             onClick={() => { setQueueOpen(true); setQueuePeek(false) }}>
@@ -447,16 +424,16 @@ export function RoomPage() {
 
       <section className={cn(
         'grid min-h-0 w-full flex-1 auto-rows-max grid-cols-1 gap-3 overflow-y-auto overscroll-contain p-4 sm:auto-rows-auto sm:gap-0 sm:overflow-hidden sm:p-0',
-        'sm:grid-cols-[72px_minmax(0,1fr)_auto]',
+        'sm:grid-cols-[auto_minmax(0,1fr)_auto]',
       )}>
-          <CollectionsRail chatTriggerRef={participant ? setChatTriggerContainer : undefined}
+          <CollectionsRail chatTriggerRef={participant ? setChatTriggerContainer : undefined} queueOpen={queueOpen}
             statsOpen={statsOpen} onToggleStats={participant ? toggleStats : undefined}
             libraryRevision={libraryRevision} selectedPlaylistId={activePlaylist?.id ?? null} onSelectPlaylist={openPlaylist} />
           <div className={cn(
             'relative min-w-0 sm:h-full sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden',
             (statsOpen || settingsOpen) && 'min-h-[max(420px,calc(100dvh-220px))]',
           )}>
-            <div inert={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} aria-hidden={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} className="flex min-h-full flex-col items-center justify-center px-0 py-6 sm:px-6">
+            <div inert={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} aria-hidden={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} className="flex min-h-full flex-col items-start justify-center px-0 py-6 sm:px-7 sm:py-8">
             <NowPlaying
               onRequestSong={participant ? openSongRequest : undefined}
               song={room.currentSong}
@@ -579,25 +556,25 @@ export function RoomPage() {
               onSave={saveRoomSettings} onDelete={deleteRoom} onClose={closeSettings} />}
           </div>
             {queueOpen && <button type="button"
-              className="fixed inset-0 z-[75] bg-black/60 sm:hidden"
+              className="fixed inset-0 z-[75] bg-black/60 lg:hidden"
               aria-label={t('queue.hide')}
               onClick={() => { setQueueOpen(false); setQueuePeek(false) }} />}
             <div
               className={cn(
-                'fixed inset-y-0 right-0 h-dvh transition-[width] duration-300 ease-out motion-reduce:transition-none sm:relative sm:inset-auto sm:z-30 sm:h-full',
+                'fixed inset-y-0 right-0 h-dvh transition-[width] duration-300 ease-out motion-reduce:transition-none lg:relative lg:inset-auto lg:z-30 lg:h-full',
                 queueOpen || queuePeek ? 'z-[80]' : 'z-[65]',
                 queueOpen
-                  ? 'w-[calc(100vw-24px)] max-w-[360px] sm:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]'
+                  ? 'w-[calc(100vw-24px)] max-w-[360px] lg:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]'
                   : 'w-0',
               )}
               onPointerEnter={(event) => {
-                if (!queueOpen && event.pointerType === 'mouse' && window.matchMedia('(min-width: 640px)').matches) {
+                if (!queueOpen && event.pointerType === 'mouse' && window.matchMedia('(min-width: 1024px)').matches) {
                   setQueuePeek(true)
                 }
               }}
               onPointerLeave={() => { if (!queueOpen) setQueuePeek(false) }}
               onClick={() => {
-                if (!queueOpen && window.matchMedia('(min-width: 640px)').matches) {
+                if (!queueOpen && window.matchMedia('(min-width: 1024px)').matches) {
                   setQueueOpen(true)
                   setQueuePeek(false)
                 }
@@ -606,13 +583,13 @@ export function RoomPage() {
               <div className={cn(
                 'absolute inset-y-0 right-0 overflow-hidden transition-[width] duration-300 ease-out motion-reduce:transition-none',
                 queueOpen
-                  ? 'w-[calc(100vw-24px)] max-w-[360px] sm:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]'
-                  : queuePeek ? 'w-0 sm:w-12' : 'w-0 sm:w-3',
+                  ? 'w-[calc(100vw-24px)] max-w-[360px] lg:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]'
+                  : queuePeek ? 'w-0 lg:w-12' : 'w-0 lg:w-3',
               )}>
-                <div className="relative h-full w-[calc(100vw-24px)] max-w-[360px] bg-canvas sm:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]"
+                <div className="relative h-full w-[calc(100vw-24px)] max-w-[360px] bg-canvas lg:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]"
                   inert={!queueOpen} aria-hidden={!queueOpen}>
                   <QueuePanel
-                    className="h-full min-h-0 rounded-none border-y-0 border-r-0 bg-canvas sm:bg-panel"
+                    className="h-full min-h-0 rounded-none border-y-0 border-r-0 bg-canvas lg:bg-panel"
                     onClose={queueOpen ? () => { setQueueOpen(false); setQueuePeek(false) } : undefined}
                     songs={room.queue}
                     autoplaySuggestions={room.autoplaySuggestions}
@@ -655,7 +632,7 @@ export function RoomPage() {
                       serverNow,
                     )}
                     footer={queueOpen && <nav
-                      className="mt-3 flex shrink-0 items-center justify-between gap-1 border-t border-line px-1 pt-3 sm:hidden"
+                      className="mt-3 flex shrink-0 items-center justify-between gap-1 border-t border-line px-1 pt-3 lg:hidden"
                       aria-label={t('room.mobileMenu')}>
                       {participant && <div ref={setMobileChatTriggerContainer} className="size-10 shrink-0" />}
                       {participant && <button type="button"
@@ -679,13 +656,13 @@ export function RoomPage() {
                 </div>
               </div>
               {!queueOpen && <button type="button"
-                className="absolute top-1/2 right-0 z-10 hidden h-full w-11 -translate-y-1/2 items-center justify-center bg-transparent text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-purple-light sm:flex"
+                className="absolute top-1/2 right-0 z-10 hidden h-full w-11 -translate-y-1/2 items-center justify-center bg-transparent text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent-soft lg:flex"
                 aria-label={t('queue.show')}
                 title={t('queue.show')}
                 aria-controls="room-queue-panel"
                 aria-expanded={false}
                 onClick={() => { setQueueOpen(true); setQueuePeek(false) }}>
-                <ChevronLeft size={18} aria-hidden="true"
+                <PanelRightOpen size={19} aria-hidden="true"
                   className={cn('shrink-0 drop-shadow-[0_1px_4px_rgba(0,0,0,.9)] transition-opacity', queuePeek ? 'opacity-100' : 'opacity-0')} />
               </button>}
             </div>

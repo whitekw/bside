@@ -65,7 +65,7 @@ export function InviteRoomButton({ code, joinUrl, allowGuests, triggerClassName 
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close()
         }}
-        className="fixed inset-0 m-auto max-h-[calc(100dvh-32px)] w-[min(380px,calc(100vw-32px))] overflow-y-auto rounded-[18px] border border-line bg-[#17141e] p-6 text-ink shadow-[0_24px_80px_rgba(0,0,0,.4)] backdrop:bg-black/65 backdrop:backdrop-blur-sm"
+        className="fixed inset-0 m-auto max-h-[calc(100dvh-32px)] w-[min(380px,calc(100vw-32px))] overflow-y-auto rounded-lg border border-line bg-surface p-6 text-ink shadow-[0_24px_80px_rgba(0,0,0,.4)] backdrop:bg-black/65 "
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id={titleId} className="pt-1 text-lg font-bold tracking-[-0.03em] [word-break:keep-all]">{t('room.inviteTitle')}</h2>
@@ -77,14 +77,14 @@ export function InviteRoomButton({ code, joinUrl, allowGuests, triggerClassName 
         <div className="mx-auto mt-6 w-fit rounded-xl bg-white p-3">
           <QRCode value={joinUrl} size={144} title={t('room.inviteQr')} />
         </div>
-        <p className="mt-4 text-center font-mono text-base tracking-[0.15em]">{code}</p>
+        <p className="mt-4 text-center tabular-nums text-base tracking-[0.15em]">{code}</p>
         <label className="mt-5 block text-xs text-muted" htmlFor={`${titleId}-link`}>{t('room.inviteLink')}</label>
-        <input id={`${titleId}-link`} className="mt-2 h-10 w-full rounded-lg border border-line bg-canvas px-3 text-xs text-muted focus-visible:outline-2 focus-visible:outline-purple-light" readOnly value={joinUrl} onFocus={(event) => event.currentTarget.select()} />
+        <input id={`${titleId}-link`} className="mt-2 h-10 w-full rounded-lg border border-line bg-canvas px-3 text-xs text-muted focus-visible:outline-2 focus-visible:outline-accent-soft" readOnly value={joinUrl} onFocus={(event) => event.currentTarget.select()} />
         <button className={cn(buttonStyles({ intent: 'primary', size: 'md', fullWidth: true }), 'mt-3 gap-2')} type="button" onClick={() => void copyLink()}>
           <CopyIcon size={16} />{copied ? t('host.linkCopied') : t('room.copyInviteLink')}
         </button>
         <span className="sr-only" role="status">{copied ? t('host.linkCopied') : ''}</span>
-        {copyFailed && <p className="mt-3 text-xs leading-5 text-[#ff9cab]" role="alert">{t('room.copyLinkFailed')}</p>}
+        {copyFailed && <p className="mt-3 text-xs leading-5 text-danger" role="alert">{t('room.copyLinkFailed')}</p>}
       </dialog>
     </>
   )

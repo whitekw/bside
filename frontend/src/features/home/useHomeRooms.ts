@@ -11,14 +11,21 @@ export function useHomeRooms(user: AuthUser | null) {
   const [joinedRooms, setJoinedRooms] = useState<RoomState[]>([])
   const [busyRoomCode, setBusyRoomCode] = useState('')
   const [roomError, setRoomError] = useState('')
+  const [loading, setLoading] = useState(Boolean(user))
+  const [loadError, setLoadError] = useState('')
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let active = true
+    setOwnedRooms([])
+    setJoinedRooms([])
+    setLoadError('')
+    setRoomError('')
     if (!user) {
-      setOwnedRooms([])
-      setJoinedRooms([])
+      setLoading(false)
       return () => { active = false }
     }
+    setLoading(true)
     void Promise.all([roomApi.getOwnedRooms(), roomApi.getJoinedRooms()])
       .then(([owned, joined]) => {
         if (!active) return
@@ -26,10 +33,13 @@ export function useHomeRooms(user: AuthUser | null) {
         setJoinedRooms(joined.items)
       })
       .catch((error: unknown) => {
-        if (active) setRoomError(getErrorMessage(error, t))
+        if (active) setLoadError(getErrorMessage(error, t))
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
     return () => { active = false }
-  }, [user, t])
+  }, [user, t, attempt])
 
   async function leaveJoinedRoom(room: RoomState) {
     if (busyRoomCode || !window.confirm(t('home.leaveRoomConfirm', { code: room.code }))) return
@@ -51,6 +61,9 @@ export function useHomeRooms(user: AuthUser | null) {
     joinedRooms,
     busyRoomCode,
     roomError,
+    loading,
+    loadError,
+    reload: () => setAttempt((current) => current + 1),
     leaveJoinedRoom,
   }
 }

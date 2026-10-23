@@ -28,16 +28,16 @@ type ChoiceCardProps = {
 function ChoiceCard({ value, title, description, context, checked, recommended, disabled, onChange }: ChoiceCardProps) {
   return (
     <label className={cn(
-      'flex min-h-[114px] items-center gap-4 rounded-[18px] border bg-[#15121e] p-4 transition-colors sm:p-5',
-      'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-4 has-[:focus-visible]:outline-purple-light',
-      disabled ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-[#1b1726]',
-      checked ? 'border-purple-light shadow-[inset_3px_0_0_#c2afff]' : 'border-line',
+      'flex min-h-[114px] items-center gap-4 rounded-lg border bg-surface p-4 transition-colors sm:p-5',
+      'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-4 has-[:focus-visible]:outline-accent-soft',
+      disabled ? 'cursor-wait opacity-60' : 'cursor-pointer hover:bg-raised',
+      checked ? 'border-ink bg-raised' : 'border-line',
     )}>
-      <input className="size-[18px] shrink-0 accent-purple-light [color-scheme:dark]" type="radio" name="playback-mode" value={value} checked={checked} disabled={disabled} onChange={onChange} />
+      <input className="size-[18px] shrink-0 accent-accent-soft [color-scheme:dark]" type="radio" name="playback-mode" value={value} checked={checked} disabled={disabled} onChange={onChange} />
       <span className="min-w-0">
         <span className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           <strong className="text-base font-bold tracking-[-0.02em]">{title}</strong>
-          {recommended && <span className="text-xs text-purple-light">{recommended}</span>}
+          {recommended && <span className="text-xs text-ink">{recommended}</span>}
         </span>
         <span className="block text-[13px] leading-6 text-muted [word-break:keep-all]">{description}</span>
         <span className="block text-xs leading-6 text-muted">{context}</span>
@@ -94,7 +94,7 @@ export function CreateRoomPage() {
           <ArrowLeft size={16} aria-hidden="true" />{t('common.home')}
         </Link>
         {!user ? (
-          <section className="mt-6 rounded-[18px] border border-line bg-[#15121e] p-6 sm:p-8">
+          <section className="mt-6 rounded-lg border border-line bg-surface p-6 sm:p-8">
             <h1 className="text-2xl font-bold tracking-[-0.03em] [word-break:keep-all]">{t('createRoom.loginRequiredTitle')}</h1>
             <p className="mt-3 mb-6 text-sm leading-7 text-muted [word-break:keep-all]">
               {enabled ? t('createRoom.loginRequiredDescription') : t('createRoom.authUnavailable')}
@@ -113,12 +113,12 @@ export function CreateRoomPage() {
               <p className="mt-3 text-sm leading-6 text-muted">{t('createRoom.inviteDescription')}</p>
             </header>
             <form className="grid gap-5" onSubmit={createRoom} aria-busy={creating}>
-              <div className="rounded-[18px] border border-line bg-[#15121e] p-5">
+              <div className="rounded-lg border border-line bg-surface p-5">
                 <label className="mb-2 block text-sm font-semibold" htmlFor="room-title">{t('roomSettings.titleLabel')}</label>
                 <input className={formControlStyles({ size: 'large' })} id="room-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={60} placeholder={t('roomSettings.titlePlaceholder')} disabled={creating} />
                 <p className="mt-2 text-xs text-muted">{t('roomSettings.titleHint')}</p>
                 <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-line pt-5">
-                  <input className="mt-0.5 size-[18px] shrink-0 accent-purple-light" type="checkbox" checked={allowGuests} onChange={(event) => setAllowGuests(event.target.checked)} disabled={creating} />
+                  <input className="mt-0.5 size-[18px] shrink-0 accent-accent-soft" type="checkbox" checked={allowGuests} onChange={(event) => setAllowGuests(event.target.checked)} disabled={creating} />
                   <span><strong className="block text-sm">{t('roomSettings.allowGuestsLabel')}</strong><span className="mt-1 block text-xs leading-5 text-muted">{t('roomSettings.allowGuestsHint')}</span></span>
                 </label>
               </div>
@@ -127,7 +127,7 @@ export function CreateRoomPage() {
                 <ChoiceCard value="all_devices" title={t('createRoom.togetherTitle')} description={t('createRoom.togetherDescription')} context={t('createRoom.togetherContext')} recommended={t('createRoom.recommended')} checked={playbackMode === 'all_devices'} disabled={creating} onChange={() => setPlaybackMode('all_devices')} />
                 <ChoiceCard value="host_only" title={t('createRoom.speakerTitle')} description={t('createRoom.speakerDescription')} context={t('createRoom.speakerContext')} checked={playbackMode === 'host_only'} disabled={creating} onChange={() => setPlaybackMode('host_only')} />
               </fieldset>
-              {error && <p className="rounded-xl border border-danger/30 bg-danger/[0.08] px-4 py-3 text-sm leading-6 text-[#ffd4db]" role="alert">{error}</p>}
+              {error && <p className="rounded-xl border border-danger/30 bg-danger/[0.08] px-4 py-3 text-sm leading-6 text-danger" role="alert">{error}</p>}
               <div>
                 <button className={cn(buttonStyles({ intent: 'primary', size: 'lg', fullWidth: true }), 'gap-4 rounded-md text-sm font-semibold')} disabled={creating} type="submit">
                   {creating ? t('home.creating') : playbackMode === 'all_devices' ? t('createRoom.createTogether') : t('createRoom.createSpeaker')}

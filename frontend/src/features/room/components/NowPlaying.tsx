@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Music2 as MusicIcon, Play as PlayIcon, Plus, Shuffle } from 'lucide-react'
+import { Disc3, Play as PlayIcon, Plus, Shuffle } from 'lucide-react'
 import type { Song } from '../types'
 import { useI18n } from '../../../shared/i18n/i18n-context'
-import { buttonStyles, cn, vinylStyles } from '../../../shared/styles'
+import { buttonStyles, cn } from '../../../shared/styles'
 
 export const NowPlaying = ({
   song,
@@ -19,25 +19,25 @@ export const NowPlaying = ({
 }) => {
   const { t } = useI18n()
   return (
-    <div className="flex w-full flex-col items-center">
+    <div className="mx-auto flex w-full max-w-[960px] flex-col items-start">
       {song ? (
-        <div className="flex w-full flex-col items-center gap-5">
+        <div className="flex w-full flex-col items-center gap-6">
           <div className="flex w-full max-w-[min(960px,calc(max(180px,100dvh-360px)*16/9))] min-w-0 items-center justify-center">
             {player ? (
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#050507]">
+              <div className="relative aspect-video w-full overflow-hidden rounded-[4px] bg-black">
                 {player}
               </div>
             ) : (
               <img
-                className="aspect-video w-full rounded-xl object-contain"
+                className="aspect-video w-full rounded-[4px] bg-black object-contain"
                 src={song.thumbnailUrl}
                 alt=""
               />
             )}
           </div>
-          <div className="flex w-full max-w-[800px] min-w-0 flex-col items-center justify-center gap-3 text-center">
-            <div className="w-full min-w-0">
-              <h2 className="m-0 line-clamp-3 break-words text-xl font-bold leading-snug text-ink md:text-2xl" title={song.title}>
+          <div className="flex w-full min-w-0 flex-col items-center gap-4">
+            <div className="w-full min-w-0 text-center">
+              <h2 className="m-0 line-clamp-2 break-words text-xl font-semibold leading-snug tracking-[-0.025em] text-ink md:text-[28px]" title={song.title}>
                 {song.title}
               </h2>
               <p className="m-0 mt-2 truncate text-sm text-muted md:text-base" title={song.artist}>
@@ -45,7 +45,7 @@ export const NowPlaying = ({
               </p>
             </div>
             <div className="flex max-w-full min-w-0 items-center gap-2 text-sm text-muted">
-              <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-purple/30 bg-purple/20 text-xs font-bold text-purple-light">
+              <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-full bg-raised text-xs font-medium text-ink">
                 {song.isAutoplay ? <Shuffle size={14} aria-hidden="true" /> : song.addedByAvatarUrl ? (
                   <img className="size-full object-cover" src={song.addedByAvatarUrl} alt="" />
                 ) : (
@@ -57,45 +57,38 @@ export const NowPlaying = ({
               </span>
             </div>
             {!player && onClaimPlaybackHost && (
-            <button
-              className={cn(
-                buttonStyles({ intent: 'primary', size: 'md' }),
-                'mt-1 w-full justify-center sm:w-fit',
-              )}
-              disabled={claimingPlaybackHost}
-              type="button"
-              onClick={onClaimPlaybackHost}
-            >
-              <PlayIcon size={17} />
-              {claimingPlaybackHost
-                ? t('host.claimingPlayback')
-                : t('host.claimPlayback')}
-            </button>
+              <button
+                className={cn(
+                  buttonStyles({ intent: 'primary', size: 'md' }),
+                  'mt-1 w-full justify-center sm:w-fit',
+                )}
+                disabled={claimingPlaybackHost}
+                type="button"
+                onClick={onClaimPlaybackHost}
+              >
+                <PlayIcon size={17} />
+                {claimingPlaybackHost
+                  ? t('host.claimingPlayback')
+                  : t('host.claimPlayback')}
+              </button>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex min-h-[190px] flex-1 items-center justify-center px-4 py-8 text-center md:min-h-[220px]">
-          <div className="flex max-w-[360px] flex-col items-center">
-            <div
-              className={cn(
-                vinylStyles,
-                'mb-5 size-[68px] shadow-[0_0_45px_rgba(155,123,255,.12)] motion-safe:animate-none',
-              )}
-            >
-              <MusicIcon size={27} />
-            </div>
-            <h2 className="mb-2 text-lg tracking-[-0.03em] text-ink md:text-xl">
+        <div className="flex min-h-[280px] w-full flex-1 items-center px-2 py-10 md:min-h-[360px] md:px-6">
+          <div className="flex max-w-[460px] flex-col items-start">
+            <Disc3 className="mb-8 text-muted" size={40} strokeWidth={1} aria-hidden="true" />
+            <h2 className="mb-3 text-2xl font-medium tracking-[-0.035em] text-ink md:text-[32px]">
               {t('nowPlaying.empty')}
             </h2>
-            <p className="m-0 text-xs leading-5 text-dim md:text-[13px]">
+            <p className="m-0 text-sm leading-6 text-muted">
               {t('nowPlaying.emptyDescription')}
             </p>
             {onRequestSong && (
               <button
                 className={cn(
-                  buttonStyles({ intent: 'outline', size: 'md' }),
-                  'mt-6 gap-2 rounded-md border-purple/25 bg-purple/[0.08] font-semibold text-purple-light hover:border-purple/50 hover:bg-purple/15',
+                  buttonStyles({ intent: 'primary', size: 'md' }),
+                  'mt-7 gap-2',
                 )}
                 type="button"
                 aria-haspopup="dialog"

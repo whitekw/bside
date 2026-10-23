@@ -156,8 +156,8 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
               [next === 'general' ? 0 : 1]
             target?.focus()
           }}
-          className={cn('border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light',
-            tab === option ? 'border-purple-light text-purple-light' : 'border-transparent text-muted hover:text-ink')}>
+          className={cn('border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft',
+            tab === option ? 'border-accent-soft text-ink' : 'border-transparent text-muted hover:text-ink')}>
           {t(option === 'general' ? 'roomSettings.general' : 'roomSettings.autoplaySection')}
         </button>)}
       </div>
@@ -176,7 +176,7 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
               <label className="flex min-w-0 cursor-pointer items-center justify-between gap-4 border-t border-line pt-5">
                 <span className="min-w-0"><strong className="block text-sm">{t('roomSettings.allowGuestsLabel')}</strong>
                   <span className="mt-1 block text-xs leading-5 text-muted">{t('roomSettings.allowGuestsHint')}</span></span>
-                <input className="size-5 shrink-0 accent-purple-light" type="checkbox"
+                <input className="size-5 shrink-0 accent-accent-soft" type="checkbox"
                   checked={allowGuests} onChange={(event) => updateDraft({ allowGuests: event.target.checked })} disabled={saving || deleting} />
               </label>
             </div>
@@ -218,13 +218,13 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
                     <span className="mt-1 block text-xs leading-5 text-muted">{room.autoplayHistoryCount < 10
                       ? t('roomSettings.historyAutoplayLocked', { count: room.autoplayHistoryCount })
                       : t('roomSettings.historyAutoplayHint')}</span></span>
-                  <input className="size-5 shrink-0 accent-purple-light" type="checkbox"
+                  <input className="size-5 shrink-0 accent-accent-soft" type="checkbox"
                     checked={historyAutoplay} onChange={(event) => updateDraft({ historyAutoplay: event.target.checked })}
                     disabled={saving || deleting || room.autoplayHistoryCount < 10} />
                 </label>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-purple/10 px-3 py-2">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-accent/10 px-3 py-2">
                 <span className="text-xs text-muted">{t('roomSettings.poolLabel')}</span>
-                <strong className="text-sm tabular-nums text-purple-light">{t('roomSettings.poolCount', { count: room.autoplayPoolCount })}</strong>
+                <strong className="text-sm tabular-nums text-ink">{t('roomSettings.poolCount', { count: room.autoplayPoolCount })}</strong>
               </div>
               <fieldset className="mt-5 min-w-0 border-t border-line pt-5">
                 <legend className="sr-only">{t('roomSettings.durationLabel')}</legend>

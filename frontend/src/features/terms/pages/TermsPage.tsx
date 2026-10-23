@@ -18,7 +18,7 @@ const sections = [
   { title: 'terms.contactTitle', paragraphs: ['terms.contact'] },
 ] as const
 
-const linkClass = 'rounded-sm text-purple-light underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-purple-light'
+const linkClass = 'rounded-sm text-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent-soft'
 
 export function TermsPage() {
   const { t } = useI18n()
@@ -27,16 +27,15 @@ export function TermsPage() {
     <EntryLayout className="flex min-h-dvh flex-col">
       <article className="mx-auto w-full max-w-[920px] flex-1 py-12 sm:py-16">
         <header className="border-b border-line pb-8">
-          <p className="mb-3 text-xs font-bold tracking-[0.18em] text-lime">B-SIDE · TERMS</p>
+          <p className="mb-3 text-xs font-bold tracking-[0.18em] text-signal">B-SIDE · TERMS</p>
           <h1 className="text-[clamp(30px,4vw,44px)] font-bold tracking-[-0.04em]">{t('terms.title')}</h1>
           <p className="mt-4 max-w-[70ch] text-sm leading-7 text-muted">{t('terms.intro')}</p>
           <p className="mt-4 text-xs text-dim">{t('terms.updated')}</p>
         </header>
 
         <div className="space-y-9 py-9">
-          {sections.map((section, index) => (
-            <section className="grid gap-3 sm:grid-cols-[36px_minmax(0,1fr)] sm:gap-5" key={section.title}>
-              <span className="pt-1 font-mono text-xs text-purple-light" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          {sections.map((section) => (
+            <section key={section.title}>
               <div>
                 <h2 className="mb-3 text-lg font-semibold tracking-[-0.02em]">{t(section.title)}</h2>
                 <div className="space-y-3 text-sm leading-7 text-muted [word-break:keep-all]">

@@ -99,8 +99,9 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
   const colorIndexById = new Map([...stats?.participants ?? []]
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((person, index) => [person.id, index]))
-  const participantColor = (id: string) =>
-    `hsl(${Math.round((260 + (colorIndexById.get(id) ?? 0) * 137.508) % 360)} 85% 72%)`
+  const participantColor = (id: string) => id === currentParticipantId
+    ? 'var(--color-signal)'
+    : ['var(--color-ink)', 'var(--color-muted)', 'var(--color-dim)'][(colorIndexById.get(id) ?? 0) % 3]
 
   return <section ref={panelRef} aria-labelledby={titleId}
     className="absolute inset-0 z-20 flex min-h-0 flex-col overflow-hidden bg-canvas text-ink">
@@ -111,8 +112,8 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
     <div className="flex shrink-0 gap-1 border-b border-line px-4 sm:px-6" role="group" aria-label={t('stats.title')}>
       {(['stats', 'history'] as const).map((option) => <button key={option} type="button"
         aria-pressed={tab === option} onClick={() => setTab(option)}
-        className={`border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light ${tab === option
-          ? 'border-purple-light text-purple-light' : 'border-transparent text-muted hover:text-ink'}`}>
+        className={`border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft ${tab === option
+          ? 'border-accent-soft text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
         {t(option === 'stats' ? 'stats.tab' : 'history.title')}
       </button>)}
     </div>
@@ -127,22 +128,22 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
         message={message} roomError={roomError} />
         : error && !stats ? <div role="alert" className="flex items-center gap-3 text-sm text-danger">
         <span>{error}</span>
-        <button type="button" className="rounded-lg p-2 text-purple-light hover:bg-white/10"
+        <button type="button" className="rounded-lg p-2 text-ink hover:bg-white/10"
           aria-label={t('common.retry')} onClick={() => { setLoading(true); setRetry((value) => value + 1) }}>
           <RotateCw size={17} />
         </button>
       </div> : loading && !stats ? <p className="text-sm text-muted" role="status">{t('library.loading')}</p> : stats && <>
         {error && <div role="alert" className="mb-4 flex items-center gap-3 rounded-lg border border-danger/25 px-3 py-2 text-xs text-danger">
           <span>{error}</span>
-          <button type="button" className="ml-auto shrink-0 rounded-md p-1 text-purple-light hover:bg-white/10"
+          <button type="button" className="ml-auto shrink-0 rounded-md p-1 text-ink hover:bg-white/10"
             aria-label={t('common.retry')} onClick={() => { setLoading(true); setRetry((value) => value + 1) }}>
             <RotateCw size={16} />
           </button>
         </div>}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {([
-            [t('stats.totalPlays'), stats.totalPlays, 'text-purple-light'],
-            [t('stats.totalUpvotes'), stats.totalUpvotes, 'text-lime'],
+            [t('stats.totalPlays'), stats.totalPlays, 'text-ink'],
+            [t('stats.totalUpvotes'), stats.totalUpvotes, 'text-signal'],
             [t('stats.totalDownvotes'), stats.totalDownvotes, 'text-danger'],
           ] as const).map(([label, count, color]) => <div key={label}
             className="flex min-h-24 flex-col justify-between rounded-xl border border-line bg-panel p-3 sm:p-4">
@@ -160,8 +161,8 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
             <div className="flex rounded-lg border border-line p-0.5" role="group" aria-label={t('stats.playbackTrend')}>
               {periods.map((option) => <button key={option} type="button"
                 aria-pressed={period === option} onClick={() => setPeriod(option)}
-                className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light ${period === option
-                  ? 'bg-purple/25 text-purple-light' : 'text-muted hover:text-ink'}`}>
+                className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft ${period === option
+                  ? 'bg-accent/25 text-ink' : 'text-muted hover:text-ink'}`}>
                 {t(`stats.${option}`)}
               </button>)}
             </div>
@@ -171,15 +172,15 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
               margin={{ top: 24, right: 8, bottom: 0, left: -14 }} accessibilityLayer>
               <CartesianGrid vertical={false} stroke="rgba(255,255,255,.08)" />
               <XAxis dataKey="key" tickLine={false} axisLine={false} minTickGap={12}
-                tick={{ fill: '#a7a2b4', fontSize: 10 }}
+                tick={{ fill: 'var(--color-muted)', fontSize: 11 }}
                 tickFormatter={(key: string) => periodLabel(key, period, locale, stats.timeZone, true)} />
               <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36}
-                tick={{ fill: '#a7a2b4', fontSize: 10 }} />
+                tick={{ fill: 'var(--color-muted)', fontSize: 11 }} />
               <Tooltip labelFormatter={(label) => periodLabel(String(label), period, locale, stats.timeZone)}
                 formatter={(value) => [numberFormatter.format(Number(value)), t('stats.playCount')]}
-                contentStyle={{ background: '#1b1723', border: '1px solid rgba(255,255,255,.14)', borderRadius: 10, color: '#f6f4ff' }}
-                cursor={{ fill: 'rgba(194,175,255,.08)' }} />
-              <Bar dataKey="count" fill="var(--color-purple-light)" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false} />
+                contentStyle={{ background: 'var(--color-surface)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 10, color: 'var(--color-ink)' }}
+                cursor={{ fill: 'rgba(255,255,255,.04)' }} />
+              <Bar dataKey="count" fill="var(--color-signal)" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={false} />
             </BarChart>
             <ul className="sr-only" aria-label={t('stats.playbackTrend')}>
               {points.map(({ key, count }) => <li key={key}>{periodLabel(key, period, locale, stats.timeZone)}: {numberFormatter.format(count)}</li>)}
@@ -202,8 +203,8 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
                   aria-label={t('stats.participantTrend')}>
                   {periods.map((option) => <button key={option} type="button"
                     aria-pressed={participantPeriod === option} onClick={() => setParticipantPeriod(option)}
-                    className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light ${participantPeriod === option
-                      ? 'bg-purple/25 text-purple-light' : 'text-muted hover:text-ink'}`}>
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft ${participantPeriod === option
+                      ? 'bg-accent/25 text-ink' : 'text-muted hover:text-ink'}`}>
                     {t(`stats.${option}`)}
                   </button>)}
                 </div>
@@ -213,14 +214,14 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
                   margin={{ top: 24, right: 8, bottom: 0, left: -14 }} accessibilityLayer>
                   <CartesianGrid vertical={false} stroke="rgba(255,255,255,.08)" />
                   <XAxis dataKey="key" tickLine={false} axisLine={false} minTickGap={12}
-                    tick={{ fill: '#a7a2b4', fontSize: 10 }}
+                    tick={{ fill: 'var(--color-muted)', fontSize: 11 }}
                     tickFormatter={(key: string) => periodLabel(key, participantPeriod, locale, stats.timeZone, true)} />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36}
                     ticks={participantTicks} domain={[0, participantTicks.at(-1) ?? 1]}
-                    tick={{ fill: '#a7a2b4', fontSize: 10 }} />
+                    tick={{ fill: 'var(--color-muted)', fontSize: 11 }} />
                   <Tooltip labelFormatter={(label) => periodLabel(String(label), participantPeriod, locale, stats.timeZone)}
                     formatter={(value, name) => [numberFormatter.format(Number(value)), name]}
-                    contentStyle={{ background: '#1b1723', border: '1px solid rgba(255,255,255,.14)', borderRadius: 10, color: '#f6f4ff' }} />
+                    contentStyle={{ background: 'var(--color-surface)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 10, color: 'var(--color-ink)' }} />
                   {stats.participants.map((person, index) => <Line key={person.id} type="linear"
                     dataKey={`participant_${index}`} name={person.nickname} stroke={participantColor(person.id)}
                     strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />)}
@@ -254,12 +255,12 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
                   <th scope="row" className="py-2.5 pr-2 pl-3 text-left font-semibold sm:pl-4">
                     <span className="flex min-w-0 items-center gap-2">
                       {person.avatarUrl ? <img src={person.avatarUrl} alt="" className="size-7 shrink-0 rounded-full object-cover" />
-                        : <span className="grid size-7 shrink-0 place-items-center rounded-full bg-purple/20 text-[11px] font-bold text-purple-light">{person.nickname.slice(0, 1)}</span>}
+                        : <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent/20 text-[11px] font-bold text-ink">{person.nickname.slice(0, 1)}</span>}
                       <span className="truncate" title={person.nickname}>{person.nickname}</span>
                     </span>
                   </th>
                   <td className="text-center">{numberFormatter.format(person.plays)}</td>
-                  <td className="text-center text-lime">{numberFormatter.format(person.upvotes)}</td>
+                  <td className="text-center text-signal">{numberFormatter.format(person.upvotes)}</td>
                   <td className="text-center text-danger">{numberFormatter.format(person.downvotes)}</td>
                 </tr>)}</tbody>
               </table>

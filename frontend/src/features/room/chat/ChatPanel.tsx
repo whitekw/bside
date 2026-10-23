@@ -194,7 +194,7 @@ export function ChatPanel({
     }
   }
 
-  function renderTrigger(className: string, iconSize: number, beforeToggle?: () => void) {
+  function renderTrigger(className: string, iconSize: number, beforeToggle?: () => void, labelled = false) {
     return (
       <button
         className={className}
@@ -206,8 +206,9 @@ export function ChatPanel({
         onClick={() => { beforeToggle?.(); toggleChat() }}
       >
         {open ? <CloseIcon size={iconSize} /> : <MessageCircleIcon size={iconSize} />}
+        {labelled && <span className="hidden truncate text-sm group-data-[expanded=true]/collections:block">{t('chat.title')}</span>}
         {!open && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-canvas bg-lime px-1 text-[10px] font-black text-[#11140a]">
+          <span className="absolute -top-1 -right-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-canvas bg-signal px-1 text-[11px] font-semibold text-canvas">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -222,7 +223,7 @@ export function ChatPanel({
           ref={dialogRef}
           className={cn(
             panelStyles({ padding: 'none' }),
-            'fixed inset-auto z-[70] m-0 flex max-h-none max-w-none flex-col overflow-hidden rounded-t-2xl rounded-b-none bg-[#15121b] p-0 text-ink shadow-[0_16px_48px_rgba(0,0,0,.4)] backdrop:bg-black/40 backdrop:backdrop-blur-[2px] md:rounded-xl [&:not([open])]:hidden',
+            'fixed inset-auto z-[70] m-0 flex max-h-none max-w-none flex-col overflow-hidden rounded-t-2xl rounded-b-none bg-surface p-0 text-ink shadow-[0_16px_48px_rgba(0,0,0,.4)] backdrop:bg-black/40  md:rounded-xl [&:not([open])]:hidden',
           )}
           style={chatWindowStyle}
           aria-labelledby={titleId}
@@ -253,12 +254,12 @@ export function ChatPanel({
               {(['conversation', 'logs'] as const).map((view) => <button key={view} type="button"
                 aria-pressed={activeView === view} onClick={() => setActiveView(view)}
                 className={cn(
-                  'relative rounded-md px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-purple-light',
-                  activeView === view ? 'bg-purple/25 text-purple-light' : 'text-muted hover:text-ink',
+                  'relative rounded-md px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft',
+                  activeView === view ? 'bg-accent/25 text-ink' : 'text-muted hover:text-ink',
                 )}>
                 {t(view === 'conversation' ? 'chat.conversation' : 'chat.logs')}
                 {view === 'conversation' && activeView === 'logs' && unreadCount > 0 &&
-                  <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-lime" aria-hidden="true" />}
+                  <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-signal" aria-hidden="true" />}
               </button>)}
             </div>
             <button
@@ -282,8 +283,8 @@ export function ChatPanel({
               {visibleMessages.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-xs text-muted">
                   {activeView === 'conversation'
-                    ? <MessageCircleIcon size={28} className="text-purple-light/60" aria-hidden="true" />
-                    : <History size={28} className="text-purple-light/60" aria-hidden="true" />}
+                    ? <MessageCircleIcon size={28} className="text-ink/60" aria-hidden="true" />
+                    : <History size={28} className="text-ink/60" aria-hidden="true" />}
                   <p>{t(activeView === 'conversation' ? 'chat.empty' : 'chat.logsEmpty')}</p>
                 </div>
               ) : (
@@ -307,11 +308,11 @@ export function ChatPanel({
                       <Fragment key={group.id}>
                         {dateDivider}
                         <div className="flex items-start gap-2 rounded-lg border border-line/50 bg-white/[0.025] px-3 py-2 text-[11px] leading-4 text-muted [overflow-wrap:anywhere]">
-                          <span className="mt-1 size-1.5 shrink-0 rounded-full bg-purple-light/55" aria-hidden="true" />
+                          <span className="mt-1 size-1.5 shrink-0 rounded-full bg-accent-soft/55" aria-hidden="true" />
                           <p className="m-0 min-w-0 flex-1">
                             {formatSystemMessage(group, t)}
                           </p>
-                          <time className="shrink-0 whitespace-nowrap text-[10px] text-dim"
+                          <time className="shrink-0 whitespace-nowrap text-[11px] text-dim"
                             dateTime={new Date(group.createdAt).toISOString()}>
                             {timeFormatter.format(group.createdAt)}
                           </time>
@@ -331,15 +332,15 @@ export function ChatPanel({
                           isMine ? 'self-end' : 'self-start',
                         )}
                       >
-                      {!isMine && <span className="mt-0.5 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-purple/25 bg-purple/[0.08] text-[10px] font-bold text-purple-light" aria-hidden="true">
+                      {!isMine && <span className="mt-0.5 grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-accent/25 bg-accent/[0.08] text-[11px] font-bold text-ink" aria-hidden="true">
                         {avatarUrl
                           ? <img className="size-full object-cover" src={avatarUrl} alt="" />
                           : message.nickname.trim().slice(0, 1).toUpperCase()}
                       </span>}
                       <div className={cn('flex min-w-0 flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
-                        <div className="flex max-w-full items-center gap-2 px-0.5 text-[10px] text-dim">
+                        <div className="flex max-w-full items-center gap-2 px-0.5 text-[11px] text-dim">
                           {!isMine && (
-                            <strong className="max-w-36 truncate font-extrabold text-muted">
+                            <strong className="max-w-36 truncate font-semibold text-muted">
                               {message.nickname}
                             </strong>
                           )}
@@ -353,7 +354,7 @@ export function ChatPanel({
                             className={cn(
                               'm-0 max-w-full whitespace-pre-wrap rounded-lg border px-2.5 py-1.5 text-[13px] leading-5 [overflow-wrap:anywhere]',
                               isMine
-                                ? 'rounded-br-sm border-purple/20 bg-purple/20 text-ink'
+                                ? 'rounded-br-sm border-accent/20 bg-accent/20 text-ink'
                                 : 'rounded-bl-sm border-line bg-white/[0.035] text-ink',
                             )}
                             title={timeFormatter.format(entry.createdAt)}
@@ -384,7 +385,7 @@ export function ChatPanel({
               <button
                 className={cn(
                   buttonStyles({ intent: 'outline', size: 'md' }),
-                  'size-11 min-h-11 shrink-0 rounded-lg border-purple/25 bg-purple/20 px-0 text-purple-light enabled:hover:bg-purple/30 disabled:border-transparent disabled:bg-white/[0.035] disabled:text-dim disabled:opacity-100',
+                  'size-11 min-h-11 shrink-0 rounded-lg border-accent/25 bg-accent/20 px-0 text-ink enabled:hover:bg-accent/30 disabled:border-transparent disabled:bg-white/[0.035] disabled:text-dim disabled:opacity-100',
                 )}
                 type="submit"
                 disabled={sending || draft.trim().length === 0}
@@ -394,7 +395,7 @@ export function ChatPanel({
               </button>
             </form>}
             {activeView === 'conversation' && sendError !== null && (
-              <p className="mt-2 px-1 text-xs text-[#ff9cab]" role="alert">
+              <p className="mt-2 px-1 text-xs text-danger" role="alert">
                 {getErrorMessage(sendError, t)}
               </p>
             )}
@@ -403,22 +404,22 @@ export function ChatPanel({
           {isDesktop && (
             <>
               <div
-                className="absolute top-0 left-0 z-10 size-5 cursor-nwse-resize touch-none border-t-2 border-l-2 border-transparent hover:border-purple-light/60"
+                className="absolute top-0 left-0 z-10 size-5 cursor-nwse-resize touch-none border-t-2 border-l-2 border-transparent hover:border-accent-soft/60"
                 aria-hidden="true"
                 onPointerDown={(event) => startWindowInteraction('nw', event)}
               />
               <div
-                className="absolute top-0 right-0 z-10 size-5 cursor-nesw-resize touch-none border-t-2 border-r-2 border-transparent hover:border-purple-light/60"
+                className="absolute top-0 right-0 z-10 size-5 cursor-nesw-resize touch-none border-t-2 border-r-2 border-transparent hover:border-accent-soft/60"
                 aria-hidden="true"
                 onPointerDown={(event) => startWindowInteraction('ne', event)}
               />
               <div
-                className="absolute bottom-0 left-0 z-10 size-5 cursor-nesw-resize touch-none border-b-2 border-l-2 border-transparent hover:border-purple-light/60"
+                className="absolute bottom-0 left-0 z-10 size-5 cursor-nesw-resize touch-none border-b-2 border-l-2 border-transparent hover:border-accent-soft/60"
                 aria-hidden="true"
                 onPointerDown={(event) => startWindowInteraction('sw', event)}
               />
               <div
-                className="absolute right-0 bottom-0 z-10 size-5 cursor-nwse-resize touch-none border-r-2 border-b-2 border-transparent hover:border-purple-light/60"
+                className="absolute right-0 bottom-0 z-10 size-5 cursor-nwse-resize touch-none border-r-2 border-b-2 border-transparent hover:border-accent-soft/60"
                 aria-hidden="true"
                 onPointerDown={(event) => startWindowInteraction('se', event)}
               />
@@ -428,16 +429,16 @@ export function ChatPanel({
       )}
 
       {triggerContainer && createPortal(renderTrigger(cn(
-        'relative grid size-11 shrink-0 place-items-center rounded-[4px] border border-purple-light/25 text-purple-light transition-colors hover:border-purple-light/45 hover:bg-purple/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light',
-        open ? 'bg-purple/55 text-white' : 'bg-purple-light/20',
-      ), 21), triggerContainer)}
+        'relative flex h-10 w-full shrink-0 items-center justify-center gap-3 rounded-md text-muted transition-colors hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink group-data-[expanded=true]/collections:justify-start group-data-[expanded=true]/collections:px-3',
+        open && 'bg-raised text-ink',
+      ), 21, undefined, true), triggerContainer)}
       {mobileTriggerContainer && createPortal(renderTrigger(
         cn(chromeIconButtonStyles, 'relative text-white'),
         19,
         onMobileTriggerClick,
       ), mobileTriggerContainer)}
       {renderTrigger(cn(
-        'fixed right-4 bottom-[128px] z-[70] grid size-14 place-items-center rounded-[4px] border border-purple-light/30 bg-purple/25 text-purple-light shadow-[0_12px_38px_rgba(0,0,0,.48),0_0_28px_rgba(155,123,255,.16),inset_0_1px_0_rgba(255,255,255,.16)] backdrop-blur-xl transition-[transform,background-color,border-color] hover:scale-105 hover:border-purple-light/45 hover:bg-purple/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light sm:right-6 sm:bottom-[92px]',
+        'fixed right-4 bottom-[128px] z-[70] grid size-12 place-items-center rounded-full border border-line bg-raised text-ink transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:right-6 sm:bottom-[92px]',
         triggerContainer && 'sm:hidden',
         hideMobileFloatingTrigger && 'max-[639px]:hidden',
       ), 25)}

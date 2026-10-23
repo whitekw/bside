@@ -17,11 +17,11 @@ type PanelHeaderProps = {
 export function PanelHeader({ titleId, title, subtitle, icon, iconClassName, actions, closeLabel, onClose, closeButtonRef }: PanelHeaderProps) {
   return <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
     <div className="flex min-w-0 items-center gap-3">
-      <span className={cn('grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-purple/25 bg-purple/10 text-purple-light', iconClassName)}>
+      <span className={cn('grid size-6 shrink-0 place-items-center text-muted', iconClassName)}>
         {icon}
       </span>
       <div className="min-w-0">
-        <h2 id={titleId} className="m-0 truncate text-lg font-bold" title={title}>{title}</h2>
+        <h2 id={titleId} className="m-0 truncate text-base font-medium" title={title}>{title}</h2>
         <p className="m-0 truncate text-xs text-muted">{subtitle}</p>
       </div>
     </div>

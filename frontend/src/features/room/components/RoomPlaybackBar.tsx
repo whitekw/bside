@@ -90,7 +90,7 @@ export function RoomPlaybackBar({
   const displayedVolume = isMuted ? 0 : audioSettings?.volume ?? 0
 
   return (
-    <footer className="relative z-20 shrink-0 border-t border-line bg-[#110f16]/95 py-2.5">
+    <footer className="relative z-20 shrink-0 border-t border-line bg-surface/95 py-2.5">
       {song && duration > 0 && (
         <div
           className="pointer-events-none absolute inset-x-0 -top-px h-1 bg-white/10"
@@ -101,7 +101,7 @@ export function RoomPlaybackBar({
           aria-valuenow={Math.round(progress)}
         >
           <div
-            className="h-full bg-purple-light transition-[width] duration-500 ease-linear"
+            className="h-full bg-accent-soft transition-[width] duration-500 ease-linear"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -116,21 +116,21 @@ export function RoomPlaybackBar({
               alt=""
             />
           ) : (
-            <div className="grid size-12 shrink-0 place-items-center rounded-lg border border-purple/25 bg-purple/10 text-purple-light">
+            <div className="grid size-12 shrink-0 place-items-center rounded-lg border border-accent/25 bg-accent/10 text-ink">
               <Music2 size={20} />
             </div>
           )}
           <div className="min-w-0 max-w-[min(520px,40vw)]">
-            <h1 className="m-0 truncate text-sm font-bold text-ink" title={song?.title}>
+            <p className="m-0 truncate text-sm font-medium text-ink" title={song?.title}>
               {song?.title ?? t('status.waiting')}
-            </h1>
+            </p>
             <p className="m-0 truncate text-xs text-muted">
               {song?.artist ?? t('nowPlaying.empty')}
             </p>
           </div>
           {song && (
             <button
-              className="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-purple-light focus-visible:outline-2 focus-visible:outline-purple-light"
+              className="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft"
               type="button"
               aria-label={isSaved ? t('library.savedInPlaylist') : t('library.addToPlaylist')}
               title={isSaved ? t('library.savedInPlaylist') : t('library.addToPlaylist')}
@@ -150,9 +150,9 @@ export function RoomPlaybackBar({
                 key={choice}
                 type="button"
                 className={cn(
-                  'flex h-9 min-w-12 items-center justify-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-xs font-semibold text-ink/75 transition-colors enabled:hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light disabled:cursor-default',
+                  'flex h-9 min-w-12 items-center justify-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-xs font-semibold text-ink/75 transition-colors enabled:hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft disabled:cursor-default',
                   vote.myVote === choice
-                    ? choice === 'up' ? 'text-lime enabled:hover:text-lime' : 'text-danger enabled:hover:text-danger'
+                    ? choice === 'up' ? 'text-signal enabled:hover:text-signal' : 'text-danger enabled:hover:text-danger'
                     : 'enabled:hover:text-ink',
                 )}
                 aria-label={t(choice === 'up' ? 'vote.upCount' : 'vote.downCount', { count })}
@@ -196,7 +196,7 @@ export function RoomPlaybackBar({
         {song && audioSettings && onVolumeChange && onMuteToggle && (
           <div className="room-volume-control col-start-2 row-start-2 flex w-28 shrink-0 items-center gap-2 text-muted max-[420px]:w-20 sm:col-auto sm:row-auto">
             <button
-              className="grid size-6 shrink-0 place-items-center rounded text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-purple-light"
+              className="grid size-6 shrink-0 place-items-center rounded text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft"
               type="button"
               aria-label={isMuted ? t('playback.unmute') : t('playback.mute')}
               title={isMuted ? t('playback.unmute') : t('playback.mute')}
@@ -205,8 +205,12 @@ export function RoomPlaybackBar({
             >
               {isMuted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
             </button>
+            <span className="relative flex h-8 min-w-0 flex-1 items-center">
+            <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 h-1 rounded-full bg-white/25">
+              <span className="block h-full rounded-full bg-[var(--room-volume-fill)]" style={{ width: `${displayedVolume}%` }} />
+            </span>
             <input
-              className="room-volume-slider h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-light"
+              className="room-volume-slider relative z-10 h-8 w-full min-w-0 cursor-pointer appearance-none bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft"
               type="range"
               min={0}
               max={100}
@@ -215,8 +219,8 @@ export function RoomPlaybackBar({
               onChange={(event) => onVolumeChange(event.currentTarget.valueAsNumber)}
               aria-label={t('playback.volume')}
               title={`${t('playback.volume')}: ${displayedVolume}%`}
-              style={{ background: `linear-gradient(to right, var(--room-volume-fill) ${displayedVolume}%, rgba(255,255,255,.3) ${displayedVolume}%)` }}
             />
+            </span>
           </div>
         )}
       </div>

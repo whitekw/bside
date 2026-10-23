@@ -103,8 +103,8 @@ export function AccountMenu({
         ref={triggerRef}
         className={cn(
           'grid size-10 shrink-0 place-items-center rounded-full transition-shadow',
-          'hover:ring-2 hover:ring-purple/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-light',
-          open && 'ring-2 ring-purple/50',
+          'hover:ring-2 hover:ring-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-soft',
+          open && 'ring-2 ring-accent/50',
         )}
         type="button"
         aria-expanded={open}
@@ -126,7 +126,7 @@ export function AccountMenu({
             alt=""
           />
         ) : (
-          <span className="grid size-9 place-items-center rounded-full bg-[#5865f2] text-sm font-black text-white">
+          <span className="grid size-9 place-items-center rounded-full bg-raised text-sm font-semibold text-white">
             {user.displayName.slice(0, 1).toUpperCase()}
           </span>
         )}
@@ -141,7 +141,7 @@ export function AccountMenu({
             menuPlacement === 'above'
               ? 'absolute right-0 bottom-[calc(100%+10px)] z-[90]'
               : 'fixed top-[72px] right-5 z-[80] sm:absolute sm:top-[calc(100%+10px)] sm:right-0',
-            'border border-white/[0.12] bg-[#17141e] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,.35)]',
+            'border border-white/[0.12] bg-surface p-1.5 shadow-[0_12px_36px_rgba(0,0,0,.35)]',
           )}
           role="menu"
           aria-label={t('auth.accountMenu')}
@@ -155,7 +155,7 @@ export function AccountMenu({
                   alt=""
                 />
               ) : (
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-raised text-sm font-bold text-white">
                   {user.displayName.slice(0, 1).toUpperCase()}
                 </span>
               )}
@@ -169,7 +169,7 @@ export function AccountMenu({
 
           <div className="grid gap-0.5">
             <button
-              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-ink transition-colors hover:bg-white/[0.06] focus-visible:bg-white/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-purple-light"
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-ink transition-colors hover:bg-white/[0.06] focus-visible:bg-white/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-soft"
               role="menuitem"
               type="button"
               onClick={() => {
@@ -182,7 +182,7 @@ export function AccountMenu({
             </button>
 
           <button
-            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-[#ed9ba7] transition-colors hover:bg-danger/[0.08] focus-visible:bg-danger/[0.08] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-danger disabled:cursor-wait disabled:opacity-50"
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-danger transition-colors hover:bg-danger/[0.08] focus-visible:bg-danger/[0.08] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-danger disabled:cursor-wait disabled:opacity-50"
             disabled={loggingOut}
             role="menuitem"
             type="button"

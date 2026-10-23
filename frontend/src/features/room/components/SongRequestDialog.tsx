@@ -55,7 +55,7 @@ export function SongRequestDialog({ code, participantToken, open, onClose, onAdd
           <SearchPanel code={code} participantToken={participantToken} className="min-h-0 flex-1" onAddSong={onAddSong}
             queuedVideoIds={queuedVideoIds} currentVideoId={currentVideoId} />
           {error && <p className="mt-3 shrink-0 text-sm text-danger" role="alert">{error}</p>}
-          {message && !error && <p className="mt-3 shrink-0 text-sm text-lime" role="status">{message}</p>}
+          {message && !error && <p className="mt-3 shrink-0 text-sm text-signal" role="status">{message}</p>}
         </div>
       </div>
     </dialog>

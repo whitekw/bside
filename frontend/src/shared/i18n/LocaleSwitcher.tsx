@@ -14,7 +14,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
     <select
       className={cn(
         'h-9 max-w-[104px] rounded-lg border border-line bg-panel px-2 text-xs font-bold text-muted outline-none',
-        'focus:border-purple/65 focus:ring-2 focus:ring-purple/20 md:max-w-none md:px-2.5',
+        'focus:border-accent/65 focus:ring-2 focus:ring-accent/20 md:max-w-none md:px-2.5',
         className,
       )}
       aria-label={t('language.selectorLabel')}

@@ -32,7 +32,7 @@ export function LoginRequiredDialog({ open, onClose }: { open: boolean; onClose:
       onClick={(event) => {
         if (event.target === event.currentTarget) event.currentTarget.close()
       }}
-      className="fixed inset-0 m-auto max-h-[calc(100dvh-40px)] w-[min(420px,calc(100vw-40px))] overflow-y-auto rounded-[18px] border border-line bg-[#17141e] p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.4)] backdrop:bg-black/65 backdrop:backdrop-blur-sm"
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-40px)] w-[min(420px,calc(100vw-40px))] overflow-y-auto rounded-lg border border-line bg-surface p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.4)] backdrop:bg-black/65 "
     >
       <div className="p-6 sm:p-7">
         <h2 id={titleId} className="text-xl leading-snug font-bold tracking-[-0.03em] [word-break:keep-all]">

@@ -24,8 +24,8 @@ export function AddToQueueButton({ videoId, videoTitle, queuedVideoIds, currentV
   return <button type="button" onClick={onClick} disabled={disabled || loading || queued || current || unavailable}
     aria-label={label} title={unavailable && !queued && !current ? t('search.embedUnavailable') : label}
     className={cn(
-      'grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 transition-colors enabled:hover:bg-purple/15 focus-visible:outline-2 focus-visible:outline-purple-light',
-      queued ? 'text-purple-light' : 'text-muted enabled:hover:text-purple-light disabled:opacity-45',
+      'grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 transition-colors enabled:hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-accent-soft',
+      queued ? 'text-ink' : 'text-muted enabled:hover:text-ink disabled:opacity-45',
       className,
     )}>
     {loading ? '…' : <ListPlus size={22} strokeWidth={2} aria-hidden="true" />}

@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from 'react'
+import { Download } from 'lucide-react'
 import { useI18n } from '../../shared/i18n/i18n-context'
-import { buttonStyles, cn } from '../../shared/styles'
 import { getLatestDesktopInstallerUrl, latestDesktopReleaseUrl } from './api'
 
 export function DesktopInstallLink() {
@@ -24,13 +24,13 @@ export function DesktopInstallLink() {
 
   return (
     <a
-      className={cn(buttonStyles({ intent: 'outline', size: 'sm' }), 'hidden whitespace-nowrap md:inline-flex')}
+      className="hidden min-h-9 items-center gap-1.5 rounded-sm px-2 text-xs whitespace-nowrap text-muted underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent-soft md:inline-flex"
       href={latestDesktopReleaseUrl}
       aria-label={t('home.installWindowsApp')}
       aria-busy={resolving}
       onClick={(event) => void installLatest(event)}
     >
-      {t('home.installWindowsApp')}
+      <Download size={14} aria-hidden="true" />{t('home.installWindowsApp')}
     </a>
   )
 }
