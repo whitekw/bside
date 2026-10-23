@@ -53,7 +53,7 @@ export function QueuePanel({
     <section
       className={cn(
         panelStyles({ padding: 'none' }),
-        'flex min-h-0 flex-col overflow-hidden p-4 sm:px-4 sm:py-5',
+        'flex min-h-0 flex-col overflow-hidden px-2.5 py-4 sm:py-5',
         className,
       )}
       aria-label={t('queue.title')}

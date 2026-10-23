@@ -89,7 +89,7 @@ html[data-bside-desktop] .desktop-entry-shell.flex .desktop-entry-content {
   --color-panel: #181817;
   --color-accent: #b4b3ad;
   --color-accent-soft: #eeede8;
-  --color-signal: #e2af61;
+  --color-signal: #1ed760;
   --color-danger: #f08c84;
 
   --animate-vinyl: jukebox-spin 18s linear infinite;

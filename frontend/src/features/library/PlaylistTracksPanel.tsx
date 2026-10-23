@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Heart, ListMusic, Pencil, Trash2 } from 'lucide-react'
 import { getErrorMessage, useI18n } from '../../shared/i18n/i18n-context'
-import { buttonStyles, panelCloseButtonStyles } from '../../shared/styles'
+import { buttonStyles, cn, panelCloseButtonStyles } from '../../shared/styles'
 import { PanelHeader } from '../../shared/ui/PanelHeader'
 import { VideoResultList } from '../room/components/VideoResultList'
 import { libraryApi, type LibraryTrack, type Playlist } from './api'
@@ -119,8 +119,8 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
           <span>{t('library.trackCount', { count: loading || error ? playlist.trackCount : tracks.length })}</span>
           {playlist.isYouTubeSynced && <YouTubePlaylistBadge />}
         </span>}
-        icon={playlist.kind === 'favorites' ? <Heart size={21} fill="currentColor" aria-hidden="true" /> : coverUrl ? <img src={coverUrl} alt="" className="size-full object-cover" /> : <ListMusic size={20} aria-hidden="true" />}
-        iconClassName={playlist.kind === 'favorites' ? 'bg-raised text-white' : undefined}
+        icon={playlist.kind === 'favorites' ? <Heart size={24} fill="currentColor" aria-hidden="true" /> : coverUrl ? <img src={coverUrl} alt="" className="size-full object-cover" /> : <ListMusic size={24} aria-hidden="true" />}
+        iconClassName={cn('size-12 overflow-hidden rounded-sm', playlist.kind === 'favorites' && 'bg-raised text-white')}
         closeLabel={t('common.close')} onClose={onClose} closeButtonRef={closeButtonRef}
         actions={playlist.kind === 'custom' && <>
             <button type="button" className={panelCloseButtonStyles} aria-label={t('library.renamePlaylist')} title={t('library.renamePlaylist')} disabled={savingPlaylist} onClick={() => { setConfirmingDelete(false); setNameDraft(playlist.name); setEditingName(true); setMutationError('') }}>

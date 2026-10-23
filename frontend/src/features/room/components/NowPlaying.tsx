@@ -21,7 +21,7 @@ export const NowPlaying = ({
   return (
     <div className="mx-auto flex w-full max-w-[960px] flex-col items-start">
       {song ? (
-        <div className="flex w-full flex-col items-start gap-6">
+        <div className="flex w-full flex-col items-center gap-6">
           <div className="flex w-full max-w-[min(960px,calc(max(180px,100dvh-360px)*16/9))] min-w-0 items-center justify-center">
             {player ? (
               <div className="relative aspect-video w-full overflow-hidden rounded-[4px] bg-black">
@@ -35,8 +35,8 @@ export const NowPlaying = ({
               />
             )}
           </div>
-          <div className="flex w-full min-w-0 flex-col items-start gap-4">
-            <div className="w-full min-w-0">
+          <div className="flex w-full min-w-0 flex-col items-center gap-4">
+            <div className="w-full min-w-0 text-center">
               <h2 className="m-0 line-clamp-2 break-words text-xl font-semibold leading-snug tracking-[-0.025em] text-ink md:text-[28px]" title={song.title}>
                 {song.title}
               </h2>
@@ -56,28 +56,22 @@ export const NowPlaying = ({
                 {song.isAutoplay ? t('queue.autoplay') : t('song.requestedBy', { nickname: song.addedBy })}
               </span>
             </div>
-            {(onRequestSong || (!player && onClaimPlaybackHost)) && <div className="flex w-full flex-wrap items-center gap-3">
-            {onRequestSong && <button className={buttonStyles({ intent: 'outline', size: 'md' })}
-              type="button" aria-haspopup="dialog" onClick={onRequestSong}>
-              <Plus size={17} aria-hidden="true" />{t('search.requestSong')}
-            </button>}
             {!player && onClaimPlaybackHost && (
-            <button
-              className={cn(
-                buttonStyles({ intent: 'primary', size: 'md' }),
-                'mt-1 w-full justify-center sm:w-fit',
-              )}
-              disabled={claimingPlaybackHost}
-              type="button"
-              onClick={onClaimPlaybackHost}
-            >
-              <PlayIcon size={17} />
-              {claimingPlaybackHost
-                ? t('host.claimingPlayback')
-                : t('host.claimPlayback')}
-            </button>
+              <button
+                className={cn(
+                  buttonStyles({ intent: 'primary', size: 'md' }),
+                  'mt-1 w-full justify-center sm:w-fit',
+                )}
+                disabled={claimingPlaybackHost}
+                type="button"
+                onClick={onClaimPlaybackHost}
+              >
+                <PlayIcon size={17} />
+                {claimingPlaybackHost
+                  ? t('host.claimingPlayback')
+                  : t('host.claimPlayback')}
+              </button>
             )}
-            </div>}
           </div>
         </div>
       ) : (

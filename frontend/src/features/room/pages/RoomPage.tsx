@@ -433,7 +433,7 @@ export function RoomPage() {
             'relative min-w-0 sm:h-full sm:min-h-0 sm:overflow-y-auto sm:overscroll-contain sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden',
             (statsOpen || settingsOpen) && 'min-h-[max(420px,calc(100dvh-220px))]',
           )}>
-            <div inert={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} aria-hidden={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} className="flex min-h-full flex-col items-start justify-center px-0 py-6 sm:px-7 sm:py-8 lg:px-10">
+            <div inert={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} aria-hidden={requestSongOpen || Boolean(activePlaylist) || statsOpen || settingsOpen} className="flex min-h-full flex-col items-start justify-center px-0 py-6 sm:px-7 sm:py-8">
             <NowPlaying
               onRequestSong={participant ? openSongRequest : undefined}
               song={room.currentSong}
