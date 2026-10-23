@@ -120,7 +120,7 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
           {playlist.isYouTubeSynced && <YouTubePlaylistBadge />}
         </span>}
         icon={playlist.kind === 'favorites' ? <Heart size={21} fill="currentColor" aria-hidden="true" /> : coverUrl ? <img src={coverUrl} alt="" className="size-full object-cover" /> : <ListMusic size={20} aria-hidden="true" />}
-        iconClassName={playlist.kind === 'favorites' ? 'bg-gradient-to-br from-purple to-[#9de0cf] text-white' : undefined}
+        iconClassName={playlist.kind === 'favorites' ? 'bg-raised text-white' : undefined}
         closeLabel={t('common.close')} onClose={onClose} closeButtonRef={closeButtonRef}
         actions={playlist.kind === 'custom' && <>
             <button type="button" className={panelCloseButtonStyles} aria-label={t('library.renamePlaylist')} title={t('library.renamePlaylist')} disabled={savingPlaylist} onClick={() => { setConfirmingDelete(false); setNameDraft(playlist.name); setEditingName(true); setMutationError('') }}>
@@ -132,7 +132,7 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
           </>} />
       <div className="flex min-h-0 flex-1 flex-col px-4 py-5 sm:px-6">
         {editingName && <form onSubmit={(event) => void renamePlaylist(event)} className="mb-5 flex shrink-0 flex-wrap gap-2">
-          <input autoFocus aria-label={t('library.newName')} maxLength={60} value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-line bg-white/5 px-3 py-2 text-sm text-ink outline-none focus:border-purple-light" />
+          <input autoFocus aria-label={t('library.newName')} maxLength={60} value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-line bg-white/5 px-3 py-2 text-sm text-ink outline-none focus:border-accent-soft" />
           <button type="submit" disabled={savingPlaylist || !nameDraft.trim()} className={buttonStyles({ intent: 'primary', size: 'sm' })}>{t('library.saveName')}</button>
           <button type="button" disabled={savingPlaylist} className={buttonStyles({ intent: 'outline', size: 'sm' })} onClick={() => setEditingName(false)}>{t('common.cancel')}</button>
         </form>}
@@ -154,7 +154,7 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
         </div>
         {mutationError && <p className="mt-3 shrink-0 text-sm text-danger" role="alert">{mutationError}</p>}
         {roomError && <p className="mt-3 shrink-0 text-sm text-danger" role="alert">{roomError}</p>}
-        {message && !roomError && <p className="mt-3 shrink-0 text-sm text-lime" role="status">{message}</p>}
+        {message && !roomError && <p className="mt-3 shrink-0 text-sm text-signal" role="status">{message}</p>}
         {managedTrack && <SaveToPlaylistDialog
           key={managedTrack.videoId}
           song={managedTrack}

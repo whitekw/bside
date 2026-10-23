@@ -63,13 +63,13 @@ export function SearchPanel({ code, participantToken, onAddSong, queuedVideoIds,
   return (
     <section className={cn('flex min-w-0 flex-col', className)}>
       <form
-        className="flex shrink-0 items-center gap-2.5 rounded-xl border border-line bg-white/[0.035] py-1.5 pr-[7px] pl-3.5 text-dim focus-within:border-purple/65"
+        className="flex shrink-0 items-center gap-2.5 rounded-xl border border-line bg-white/[0.035] py-1.5 pr-[7px] pl-3.5 text-dim focus-within:border-accent/65"
         onSubmit={search}
       >
         <input
           id="room-song-search"
           aria-label={t('search.placeholder')}
-          className="h-[42px] min-w-0 flex-1 border-0 bg-transparent p-0 text-ink outline-none placeholder:text-white/20"
+          className="h-[42px] min-w-0 flex-1 border-0 bg-transparent p-0 text-ink outline-none placeholder:text-dim"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t('search.placeholder')}
@@ -79,7 +79,7 @@ export function SearchPanel({ code, participantToken, onAddSong, queuedVideoIds,
         <button
           className={cn(
             buttonStyles({ intent: 'outline', size: 'sm' }),
-            'size-11 min-h-11 shrink-0 rounded-md border-0 bg-transparent px-0 text-purple-light hover:bg-purple/15',
+            'size-11 min-h-11 shrink-0 rounded-md border-0 bg-transparent px-0 text-ink hover:bg-accent/15',
           )}
           type="submit"
           disabled={searching}
@@ -88,11 +88,11 @@ export function SearchPanel({ code, participantToken, onAddSong, queuedVideoIds,
           <SearchIcon size={20} aria-hidden="true" />
         </button>
       </form>
-      <p className="mx-[3px] mt-2 shrink-0 text-[10px] text-dim">
+      <p className="mx-[3px] mt-2 shrink-0 text-[11px] text-dim">
         {t('search.urlHint')}
       </p>
       {(searchError !== null || searchEmpty) && (
-        <p className="mx-[3px] mt-[18px] text-xs text-[#ff9cab]" role="alert">
+        <p className="mx-[3px] mt-[18px] text-xs text-danger" role="alert">
           {searchEmpty ? t('search.noResults') : getErrorMessage(searchError, t)}
         </p>
       )}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { UsersRound as UsersIcon } from 'lucide-react'
+import { Crown, UsersRound as UsersIcon } from 'lucide-react'
 import { getErrorMessage, useI18n } from '../../../shared/i18n/i18n-context'
 import { chromeIconButtonStyles, cn } from '../../../shared/styles'
 import type { RoomParticipant } from '../types'
@@ -117,14 +117,14 @@ export function ParticipantsMenu({
         }}
       >
         <UsersIcon size={19} />
-        <span className="font-mono text-xs tabular-nums text-ink">
+        <span className="tabular-nums text-xs tabular-nums text-ink">
           {onlineParticipants.length}
         </span>
       </button>
 
       {open && (
         <div
-          className="fixed top-[68px] right-3 z-40 w-[min(320px,calc(100vw-24px))] rounded-xl border border-line bg-[#15121b] p-2 shadow-[0_16px_40px_rgba(0,0,0,.4)] sm:absolute sm:top-full sm:right-0 sm:mt-2"
+          className="fixed top-[68px] right-3 z-40 w-[min(320px,calc(100vw-24px))] rounded-xl border border-line bg-surface p-2 shadow-[0_16px_40px_rgba(0,0,0,.4)] sm:absolute sm:top-full sm:right-0 sm:mt-2"
           role="dialog"
           aria-label={t('participants.title')}
         >
@@ -132,7 +132,7 @@ export function ParticipantsMenu({
             <h2 className="m-0 text-sm font-semibold tracking-[-0.02em]">
               {t('participants.title')}
             </h2>
-            <span className="font-mono text-[11px] text-muted">
+            <span className="tabular-nums text-[11px] text-muted">
               · {t('participants.count', { count: listedParticipants.length })}
             </span>
           </div>
@@ -149,7 +149,7 @@ export function ParticipantsMenu({
                 >
                   <div className="flex min-h-9 items-center gap-2.5">
                     <span className="relative size-8 shrink-0">
-                      <span className="grid size-full place-items-center overflow-hidden rounded-full border border-purple/25 bg-purple/[0.08] text-xs font-bold text-purple-light">
+                      <span className="grid size-full place-items-center overflow-hidden rounded-full border border-accent/25 bg-accent/[0.08] text-xs font-bold text-ink">
                         {roomParticipant.avatarUrl ? (
                           <img
                             className="size-full object-cover"
@@ -162,7 +162,7 @@ export function ParticipantsMenu({
                       </span>
                       {roomParticipant.online ? (
                         <span
-                          className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full bg-lime ring-2 ring-[#15121b]"
+                          className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full bg-signal ring-2 ring-surface"
                           role="img"
                           aria-label={t('participants.online')}
                           title={t('participants.online')}
@@ -183,11 +183,11 @@ export function ParticipantsMenu({
                             aria-label={t(roomParticipant.isOwner ? 'manager.hostBadge' : 'manager.badge')}
                             title={t(roomParticipant.isOwner ? 'manager.hostBadge' : 'manager.badge')}
                           >
-                            👑
+                            <Crown size={14} strokeWidth={1.5} aria-hidden="true" />
                           </span>
                         )}
                         {isCurrent && (
-                          <span className="shrink-0 text-[10px] text-dim">
+                          <span className="shrink-0 text-[11px] text-dim">
                             {t('participants.you')}
                           </span>
                         )}
@@ -197,7 +197,7 @@ export function ParticipantsMenu({
                       <button
                         className={cn(
                           'grid size-8 shrink-0 place-items-center rounded-lg border border-transparent text-lg leading-none text-muted',
-                          'hover:border-line hover:bg-white/[0.06] hover:text-ink focus-visible:outline-2 focus-visible:outline-purple',
+                          'hover:border-line hover:bg-white/[0.06] hover:text-ink focus-visible:outline-2 focus-visible:outline-accent',
                         )}
                         type="button"
                         disabled={Boolean(busyParticipantId)}
@@ -211,7 +211,7 @@ export function ParticipantsMenu({
                   </div>
                   {actionParticipantId === roomParticipant.id && hasActions && (
                     <div className="mt-2 grid gap-0.5 border-t border-line pt-2" role="group" aria-label={t('participants.actionsFor', { nickname: roomParticipant.nickname })}>
-                      {canSetManager && <button className="rounded-lg px-2 py-2 text-left text-xs text-lime hover:bg-lime/[0.08] disabled:opacity-50" type="button" disabled={Boolean(busyParticipantId)} onClick={() => void setManager(roomParticipant)}>{roomParticipant.isManager ? t('manager.removeButton') : t('manager.addButton')}</button>}
+                      {canSetManager && <button className="rounded-lg px-2 py-2 text-left text-xs text-signal hover:bg-signal/[0.08] disabled:opacity-50" type="button" disabled={Boolean(busyParticipantId)} onClick={() => void setManager(roomParticipant)}>{roomParticipant.isManager ? t('manager.removeButton') : t('manager.addButton')}</button>}
                       {onDisconnect && roomParticipant.online && <button className="rounded-lg px-2 py-2 text-left text-xs text-muted hover:bg-white/[0.06] hover:text-ink disabled:opacity-50" type="button" disabled={Boolean(busyParticipantId)} onClick={() => void disconnect(roomParticipant)}>{t('participants.disconnect')}</button>}
                     </div>
                   )}
@@ -222,14 +222,14 @@ export function ParticipantsMenu({
 
           {(onLeave || onJoinAccount) && (
             <div className="mt-2 border-t border-line pt-2">
-              {onJoinAccount && <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-purple-light hover:bg-purple/[0.08]" type="button" onClick={() => void onJoinAccount()}>{t('participants.joinAccount')}</button>}
+              {onJoinAccount && <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-ink hover:bg-accent/[0.08]" type="button" onClick={() => void onJoinAccount()}>{t('participants.joinAccount')}</button>}
               {onLeave && <button className="w-full rounded-lg px-3 py-2 text-left text-xs text-muted hover:bg-danger/[0.08] hover:text-danger" type="button" onClick={() => void onLeave()}>{t('home.leaveRoom')}</button>}
             </div>
           )}
 
           {error && (
             <p
-              className="mx-1 mt-2 mb-0 rounded-[9px] border border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs leading-5 text-[#ffd4db]"
+              className="mx-1 mt-2 mb-0 rounded-[9px] border border-danger/30 bg-danger/[0.08] px-3 py-2 text-xs leading-5 text-danger"
               role="alert"
             >
               {error}

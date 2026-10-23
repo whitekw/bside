@@ -46,7 +46,7 @@ export function CreatePlaylistDialog({ onClose, onCreated }: {
       aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); if (!saving) onClose() }}
       onClick={(event) => { if (event.target === event.currentTarget && !saving) onClose() }}
-      className="fixed inset-0 m-auto w-[min(400px,calc(100vw-32px))] rounded-2xl border border-line bg-[#1b1921] p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.55)] backdrop:bg-black/65 backdrop:backdrop-blur-sm"
+      className="fixed inset-0 m-auto w-[min(400px,calc(100vw-32px))] rounded-2xl border border-line bg-raised p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.55)] backdrop:bg-black/65 "
     >
       <form onSubmit={(event) => void create(event)}>
         <div className="flex items-center justify-between gap-3 px-5 pt-5">
@@ -65,7 +65,7 @@ export function CreatePlaylistDialog({ onClose, onCreated }: {
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={t('library.newName')}
-            className="h-11 w-full rounded-lg border border-line bg-white/5 px-3 text-sm text-ink outline-none focus:border-purple-light"
+            className="h-11 w-full rounded-lg border border-line bg-white/5 px-3 text-sm text-ink outline-none focus:border-accent-soft"
           />
           {error && <p role="alert" className="mb-0 text-sm text-danger">{error}</p>}
         </div>

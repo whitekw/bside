@@ -43,7 +43,7 @@ export function RoomJoinPreview({
   const guestJoinBlocked = !user && !room.allowGuests && !participantError
 
   return (
-    <main className="desktop-entry desktop-join min-h-screen bg-canvas bg-[radial-gradient(circle_at_30%_50%,rgba(96,72,163,.13),transparent_40%)] px-4">
+    <main className="desktop-entry desktop-join min-h-screen bg-canvas  px-4">
       <header data-desktop-titlebar className="mx-auto flex max-w-[1120px] items-center justify-between py-6">
         <Brand />
         <AccountMenu compact />
@@ -53,15 +53,15 @@ export function RoomJoinPreview({
         <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] lg:items-center lg:gap-14">
           <section className="min-w-0">
             <span className={sectionKickerStyles}>ROOM · {room.code}</span>
-            <h1 className="mt-4 text-[clamp(34px,4.5vw,56px)] font-black leading-[1.12] tracking-[-0.055em]">
+            <h1 className="mt-4 text-2xl font-medium leading-snug tracking-[-0.035em] sm:text-[32px]">
               {room.title}
             </h1>
             <p className="mt-4 max-w-[520px] text-sm leading-6 text-muted sm:text-base">
               {t('room.previewDescription')}
             </p>
 
-            <div className="mt-8 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 rounded-2xl border border-line bg-[#18151f] p-3 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-5 sm:p-4">
-              <div className="grid aspect-video place-items-center overflow-hidden rounded-xl border border-line bg-[#211c2a] text-purple-light">
+            <div className="mt-8 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 rounded-lg bg-surface p-4 sm:grid-cols-[136px_minmax(0,1fr)] sm:gap-5">
+              <div className="grid aspect-video place-items-center overflow-hidden rounded-[4px] bg-raised text-ink">
                 {song ? (
                   <img className="size-full object-cover" src={song.thumbnailUrl} alt="" />
                 ) : (
@@ -69,7 +69,7 @@ export function RoomJoinPreview({
                 )}
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-black tracking-[0.12em] text-purple-light sm:text-xs">
+                <span className="text-xs font-medium text-muted">
                   {song
                     ? room.playbackPaused ? t('status.paused') : t('status.nowPlaying')
                     : t('status.waiting')}
@@ -83,21 +83,20 @@ export function RoomJoinPreview({
 
             <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-5 text-sm">
               <div className="flex items-center gap-2.5">
-                <span className="size-2 rounded-full bg-lime shadow-[0_0_12px_rgba(215,255,100,.45)]" aria-hidden="true" />
+                <span className="size-2 rounded-full bg-signal " aria-hidden="true" />
                 <span className="text-muted">{t('room.previewOnline')}</span>
                 <strong className="text-base text-ink">{onlineCount}</strong>
               </div>
               <div className="flex items-center gap-2.5">
-                <MusicIcon size={16} className="text-purple-light" />
+                <MusicIcon size={16} className="text-ink" />
                 <span className="text-muted">{t('room.previewQueue')}</span>
                 <strong className="text-base text-ink">{room.queue.length}</strong>
               </div>
             </div>
           </section>
 
-          <form className="rounded-[22px] border border-purple/25 bg-[#191620] p-6 shadow-[0_24px_80px_rgba(0,0,0,.2)] sm:p-8" onSubmit={onJoin}>
-            <span className={sectionKickerStyles}>JOIN THE ROOM</span>
-            <h2 className="mt-3 text-[23px] font-bold leading-snug tracking-[-0.035em]">
+          <form className="rounded-lg bg-surface p-6 sm:p-8" onSubmit={onJoin}>
+            <h2 className="text-xl font-medium leading-snug tracking-[-0.025em]">
               {participantError
                 ? t('room.participationRestoreFailed')
                 : guestJoinBlocked
@@ -148,7 +147,7 @@ export function RoomJoinPreview({
               <p className="mt-4 text-center text-sm">
                 <a
                   className={!guestJoinBlocked
-                    ? 'text-muted underline decoration-purple/50 underline-offset-4 transition-colors hover:text-purple-light focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-light'
+                    ? 'text-muted underline decoration-accent/50 underline-offset-4 transition-colors hover:text-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-soft'
                     : cn(buttonStyles({ intent: 'primary', size: 'lg', fullWidth: true }), 'justify-center')}
                   href={loginUrl(`/room/${room.code}`)}
                 >

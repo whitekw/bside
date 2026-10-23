@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { SongList } from './SongList'
-import { ChevronRight, Plus, RefreshCw } from 'lucide-react'
+import { PanelRightClose, Plus, RefreshCw } from 'lucide-react'
 import { useI18n } from '../../../shared/i18n/i18n-context'
 import { cn, panelStyles } from '../../../shared/styles'
 import type { AutoplaySuggestion, Song } from '../types'
@@ -59,18 +59,18 @@ export function QueuePanel({
       aria-label={t('queue.title')}
       id="room-queue-panel"
     >
-      <div className="mb-3 flex shrink-0 items-center gap-2 px-1">
+      <div className="mb-5 flex shrink-0 items-center gap-2 px-1">
         {onClose && <button type="button" onClick={onClose}
-          className="grid size-7 shrink-0 place-items-center rounded-[4px] text-muted transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-purple-light"
+          className="grid size-7 shrink-0 place-items-center rounded-[4px] text-muted transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft"
           aria-label={t('queue.hide')} title={t('queue.hide')}>
-          <ChevronRight size={17} aria-hidden="true" />
+          <PanelRightClose size={19} aria-hidden="true" />
         </button>}
-        <h2 className="m-0 text-xs font-semibold text-muted">
-          {t('queue.title')} <span className="font-mono font-normal">· {t('queue.countShort', { count: songs.length })}</span>
+        <h2 className="m-0 text-sm font-medium text-ink">
+          {t('queue.title')} <span className="ml-1 font-normal text-muted tabular-nums">{t('queue.countShort', { count: songs.length })}</span>
         </h2>
         {onRequestSong && (
           <button
-            className="ml-auto flex h-7 shrink-0 items-center gap-1.5 rounded-[4px] px-1 text-xs font-bold text-purple-light transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-purple-light"
+            className="ml-auto flex h-7 shrink-0 items-center gap-1.5 rounded-[4px] px-1 text-xs font-bold text-ink transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft"
             type="button"
             aria-haspopup="dialog"
             aria-label={t('search.requestSong')}
@@ -101,17 +101,17 @@ export function QueuePanel({
             {onRefreshAutoplay && <button type="button" onClick={() => { void refreshAutoplay() }}
               disabled={refreshingAutoplay} aria-label={t('queue.refreshAutoplay')}
               title={t('queue.refreshAutoplay')}
-              className="grid size-7 shrink-0 place-items-center rounded-[4px] text-muted transition-colors hover:bg-white/[0.07] hover:text-purple-light focus-visible:outline-2 focus-visible:outline-purple-light disabled:opacity-50">
+              className="grid size-7 shrink-0 place-items-center rounded-[4px] text-muted transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft disabled:opacity-50">
               <RefreshCw size={15} className={refreshingAutoplay ? 'animate-spin' : ''} aria-hidden="true" />
             </button>}
           </div>
           {autoplaySuggestions.length === 0 && <p className="px-1 text-xs leading-5 text-muted">{t('queue.autoplayUnavailable')}</p>}
-          <ol className="m-0 flex list-none flex-col gap-[7px] p-0">
+          <ol className="m-0 flex list-none flex-col gap-0 p-0">
             {autoplaySuggestions.map((song) => <li key={song.id}
               title={`${song.title} · ${song.artist}`}
-              className="flex min-h-[68px] items-center gap-[11px] rounded-[4px] border border-transparent bg-white/[0.035] p-2">
+              className="flex h-14 shrink-0 items-center gap-3 rounded-[4px] border border-transparent px-2 py-[3px]">
               <img src={song.thumbnailUrl} alt="" loading="lazy"
-                className="size-14 shrink-0 rounded-[4px] bg-[#17151c] object-cover" />
+                className="size-12 shrink-0 rounded-[4px] bg-raised object-cover" />
               <div className="flex min-w-0 flex-col">
                 <strong className="truncate text-[13px]">{song.title}</strong>
                 <span className="truncate text-[11px] text-muted">{song.artist}</span>

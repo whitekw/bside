@@ -34,9 +34,9 @@ export function VideoResultList({
             'grid min-w-0 gap-x-3 gap-y-2 overflow-hidden',
             actionCount === 2 ? 'grid-cols-[minmax(0,1fr)_36px_36px]' :
               actionCount === 1 ? 'grid-cols-[minmax(0,1fr)_36px]' : 'grid-cols-1',
-            'group rounded-[4px] bg-white/[0.035] p-3 ring-1 ring-transparent ring-inset transition-colors duration-150 hover:bg-purple/15 hover:ring-purple/40 focus-within:bg-purple/15 focus-within:ring-purple/40',
+            'group rounded-[4px] bg-white/[0.035] p-3 ring-1 ring-transparent ring-inset transition-colors duration-150 hover:bg-accent/15 hover:ring-accent/40 focus-within:bg-accent/15 focus-within:ring-accent/40',
             'md:flex md:items-center md:gap-[11px] md:p-2',
-            video.previouslyPlayed && 'bg-purple/[0.09] ring-purple/25 hover:bg-purple/15 hover:ring-purple/50 focus-within:ring-purple/50',
+            video.previouslyPlayed && 'bg-accent/[0.09] ring-accent/25 hover:bg-accent/15 hover:ring-accent/50 focus-within:ring-accent/50',
           )}
           key={video.videoId}
         >
@@ -46,7 +46,7 @@ export function VideoResultList({
               src={video.thumbnailUrl}
               alt=""
             />
-            {video.previouslyPlayed && <span className="absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-full border border-purple-light/30 bg-canvas text-purple-light shadow-sm"
+            {video.previouslyPlayed && <span className="absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-full border border-accent-soft/30 bg-canvas text-ink shadow-sm"
               role="img" aria-label={t('search.previouslyPlayed')} title={t('search.previouslyPlayed')}>
               <History size={12} aria-hidden="true" />
             </span>}
@@ -65,18 +65,18 @@ export function VideoResultList({
               {video.artist}
             </span>
             {!video.embeddable && (
-              <span className="mt-1 w-fit rounded border border-danger/30 bg-danger/[0.08] px-1.5 py-0.5 text-[10px] font-bold text-[#ff9cab]">
+              <span className="mt-1 w-fit rounded border border-danger/30 bg-danger/[0.08] px-1.5 py-0.5 text-[11px] font-bold text-danger">
                 {t('search.embedUnavailable')}
               </span>
             )}
           </div>
-          <span className="hidden font-mono text-[10px] text-dim md:inline">
+          <span className="hidden tabular-nums text-[11px] text-dim md:inline">
             {formatDuration(video.durationSeconds)}
           </span>
           {onManageSaved && <button
             className={cn(
               'col-start-2 row-start-1 grid size-9 shrink-0 place-items-center justify-self-end rounded-lg border border-transparent bg-transparent text-muted transition-colors duration-150',
-              'hover:bg-white/10 hover:text-purple-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light md:col-auto md:row-auto',
+              'hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft md:col-auto md:row-auto',
             )}
             type="button"
             aria-label={`${video.title} · ${t('library.savedInPlaylist')}`}

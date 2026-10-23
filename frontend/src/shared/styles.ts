@@ -9,22 +9,22 @@ export function cn(...classes: ClassValue[]) {
 
 export const buttonStyles = tv({
   base: [
-    'inline-flex items-center justify-center gap-2 rounded-[10px] font-extrabold',
+    'inline-flex items-center justify-center gap-2 rounded-full font-medium',
     'transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
     'disabled:cursor-not-allowed disabled:opacity-45',
   ],
   variants: {
     intent: {
       primary:
-        'bg-purple-light text-[#110d19] hover:bg-[#d2c4ff] focus-visible:outline-purple-light',
+        'bg-ink text-canvas hover:bg-white focus-visible:outline-ink',
       secondary:
-        'bg-lime text-[#11140a] hover:bg-[#e4ff91] focus-visible:outline-lime',
+        'bg-raised text-ink hover:bg-white/15 focus-visible:outline-ink',
       outline:
-        'border border-line bg-panel text-ink hover:bg-white/10 focus-visible:outline-purple',
-      purple:
-        'bg-purple text-white hover:opacity-90 focus-visible:outline-purple',
+        'border border-line bg-transparent text-ink hover:border-muted hover:bg-white/5 focus-visible:outline-ink',
+      accent:
+        'bg-ink text-canvas hover:bg-white focus-visible:outline-ink',
       player:
-        'bg-lime text-[#110d19] hover:bg-[#e4ff91] focus-visible:outline-lime',
+        'bg-ink text-canvas hover:bg-white focus-visible:outline-ink',
     },
     size: {
       sm: 'min-h-9 px-3 text-xs',
@@ -45,16 +45,16 @@ export const buttonStyles = tv({
 })
 
 export const panelCloseButtonStyles =
-  'grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-ink/75 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light'
+  'grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-ink/75 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft'
 
 export const chromeIconButtonStyles =
-  'inline-flex size-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border-0 bg-transparent p-0 text-ink/75 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light disabled:cursor-not-allowed disabled:opacity-45'
+  'inline-flex size-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border-0 bg-transparent p-0 text-ink/75 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft disabled:cursor-not-allowed disabled:opacity-45'
 
 export const formControlStyles = tv({
   base: [
-    'w-full rounded-[10px] border border-line bg-white/[0.045] text-ink outline-none',
-    'transition-colors placeholder:text-white/20',
-    'focus:border-purple/75 focus:bg-purple/[0.065]',
+    'w-full rounded-md border border-line bg-canvas text-ink outline-none',
+    'transition-colors placeholder:text-dim',
+    'focus:border-accent/75 focus:bg-accent/[0.065]',
     'disabled:cursor-not-allowed disabled:opacity-45',
   ],
   variants: {
@@ -75,13 +75,13 @@ export const formControlStyles = tv({
 })
 
 export const panelStyles = tv({
-  base: 'min-w-0 rounded-2xl border',
+  base: 'min-w-0 rounded-lg border',
   variants: {
     tone: {
-      default: 'border-line bg-[#110f16]/75',
-      soft: 'border-line bg-panel',
-      purple:
-        'border-purple/25 bg-[linear-gradient(135deg,rgba(155,123,255,0.13),rgba(255,255,255,0.025))]',
+      default: 'border-transparent bg-surface',
+      soft: 'border-transparent bg-panel',
+      accent:
+        'border-transparent bg-surface',
     },
     padding: {
       none: '',
@@ -99,12 +99,12 @@ export const cardIconStyles = tv({
   base: 'mb-6 grid size-12 place-items-center rounded-[13px] border',
   variants: {
     tone: {
-      purple: 'border-purple/35 bg-purple/[0.09] text-purple-light',
-      lime: 'border-lime/25 bg-lime/[0.06] text-lime',
+      accent: 'border-accent/35 bg-accent/[0.09] text-ink',
+      signal: 'border-signal/25 bg-signal/[0.06] text-signal',
     },
   },
   defaultVariants: {
-    tone: 'purple',
+    tone: 'accent',
   },
 })
 
@@ -112,9 +112,9 @@ export const connectionDotStyles = tv({
   base: 'size-[7px] shrink-0 rounded-full',
   variants: {
     connected: {
-      false: 'bg-[#68636f] shadow-[0_0_0_4px_rgba(104,99,111,.08)]',
+      false: 'bg-dim',
       true:
-        'bg-lime shadow-[0_0_0_4px_rgba(215,255,100,.08),0_0_12px_rgba(215,255,100,.45)]',
+        'bg-signal',
     },
   },
   defaultVariants: {
@@ -130,7 +130,7 @@ export const noticeStyles = tv({
   variants: {
     tone: {
       error: 'border-danger/35 bg-[#391119]/95 text-[#ffc0ca]',
-      success: 'border-lime/25 bg-[#19200d]/95 text-[#e7ff9d]',
+      success: 'border-line bg-raised text-ink',
     },
   },
   defaultVariants: {
@@ -139,13 +139,11 @@ export const noticeStyles = tv({
 })
 
 export const sectionKickerStyles =
-  'text-[10px] font-black tracking-[0.16em] text-lime md:text-[11px]'
+  'text-xs font-medium text-muted'
 
 export const pageMessageStyles =
   'flex min-h-screen flex-col items-center justify-center gap-3 bg-canvas p-6 text-center'
 
 export const vinylStyles = [
-  'grid size-[88px] place-items-center rounded-full border border-purple/30 text-purple-light',
-  'bg-[repeating-radial-gradient(circle,#191620_0_4px,#100e15_5px_8px)]',
-  'shadow-[0_0_60px_rgba(155,123,255,.15)] motion-safe:animate-vinyl',
+  'grid size-[88px] place-items-center rounded-full border border-line text-muted bg-surface',
 ].join(' ')

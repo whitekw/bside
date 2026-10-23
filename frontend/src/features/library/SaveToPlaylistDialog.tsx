@@ -111,7 +111,7 @@ export function SaveToPlaylistDialog({ song, onClose, onSavedChange, onLibraryCh
       aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); onClose() }}
       onClick={(event) => { if (event.target === event.currentTarget) onClose() }}
-      className="fixed inset-0 m-auto max-h-[min(650px,calc(100dvh-32px))] w-[min(500px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-line bg-[#1b1921] p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.55)] backdrop:bg-black/65 backdrop:backdrop-blur-sm"
+      className="fixed inset-0 m-auto max-h-[min(650px,calc(100dvh-32px))] w-[min(500px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-line bg-raised p-0 text-ink shadow-[0_24px_80px_rgba(0,0,0,.55)] backdrop:bg-black/65 "
     >
       <div className="flex max-h-[min(650px,calc(100dvh-32px))] flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 px-5 pt-5 pb-3">
@@ -128,18 +128,18 @@ export function SaveToPlaylistDialog({ song, onClose, onSavedChange, onLibraryCh
         ) : (
           <>
             <div className="shrink-0 space-y-3 px-5 pb-4">
-              <label className="flex items-center gap-2 rounded-xl border border-line bg-white/5 px-3 py-2.5 text-muted focus-within:border-purple-light">
+              <label className="flex items-center gap-2 rounded-xl border border-line bg-white/5 px-3 py-2.5 text-muted focus-within:border-accent-soft">
                 <Search size={18} aria-hidden="true" />
                 <span className="sr-only">{t('library.search')}</span>
                 <input className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('library.search')} />
               </label>
               {creating ? (
                 <form onSubmit={(event) => void create(event)} className="flex gap-2">
-                  <input autoFocus aria-label={t('library.newName')} maxLength={60} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('library.newName')} className="min-w-0 flex-1 rounded-lg border border-line bg-white/5 px-3 py-2 text-sm outline-none focus:border-purple-light" />
+                  <input autoFocus aria-label={t('library.newName')} maxLength={60} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('library.newName')} className="min-w-0 flex-1 rounded-lg border border-line bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent-soft" />
                   <button type="submit" disabled={!name.trim() || Boolean(savingId)} className={buttonStyles({ intent: 'primary', size: 'sm' })}>{t('library.create')}</button>
                 </form>
               ) : (
-                <button type="button" disabled={loading} onClick={() => setCreating(true)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-semibold text-ink hover:bg-white/8 focus-visible:outline-2 focus-visible:outline-purple-light">
+                <button type="button" disabled={loading} onClick={() => setCreating(true)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-semibold text-ink hover:bg-white/8 focus-visible:outline-2 focus-visible:outline-accent-soft">
                   <Plus size={20} aria-hidden="true" />{t('library.newPlaylist')}
                 </button>
               )}
@@ -149,8 +149,8 @@ export function SaveToPlaylistDialog({ song, onClose, onSavedChange, onLibraryCh
               {loading ? <p className="text-sm text-muted">{t('library.loading')}</p> : visible.length === 0 ? <p className="text-sm text-muted">{t('library.noPlaylists')}</p> : (
                 <div className="space-y-1.5">
                   {visible.map((playlist) => (
-                    <button key={playlist.id} type="button" disabled={Boolean(savingId) || playlist.isYouTubeSynced} title={playlist.isYouTubeSynced ? t('library.youtubeReadOnly') : undefined} onClick={() => void toggle(playlist)} aria-pressed={playlist.containsTrack} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-purple-light disabled:opacity-60">
-                      <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br from-purple to-[#9de0cf] text-white">
+                    <button key={playlist.id} type="button" disabled={Boolean(savingId) || playlist.isYouTubeSynced} title={playlist.isYouTubeSynced ? t('library.youtubeReadOnly') : undefined} onClick={() => void toggle(playlist)} aria-pressed={playlist.containsTrack} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-accent-soft disabled:opacity-60">
+                      <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-raised text-white">
                         {playlist.kind === 'favorites' ? <Heart size={22} fill="currentColor" aria-hidden="true" /> : playlist.thumbnailUrl ? <img className="size-full object-cover" src={playlist.thumbnailUrl} alt="" /> : <ListMusic size={21} aria-hidden="true" />}
                       </span>
                       <span className="min-w-0 flex-1">
@@ -160,7 +160,7 @@ export function SaveToPlaylistDialog({ song, onClose, onSavedChange, onLibraryCh
                           {playlist.isYouTubeSynced && <YouTubePlaylistBadge />}
                         </span>
                       </span>
-                      <span className={cn('grid size-6 shrink-0 place-items-center rounded-full border', playlist.containsTrack ? 'border-lime bg-lime text-canvas' : 'border-muted text-transparent')} aria-hidden="true"><Check size={15} /></span>
+                      <span className={cn('grid size-6 shrink-0 place-items-center rounded-full border', playlist.containsTrack ? 'border-signal bg-signal text-canvas' : 'border-muted')} aria-hidden="true">{playlist.containsTrack && <Check size={15} />}</span>
                     </button>
                   ))}
                 </div>

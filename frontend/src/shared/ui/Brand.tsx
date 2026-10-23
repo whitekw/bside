@@ -16,7 +16,7 @@ export function Brand({
   return (
     <Link
       className={cn(
-        'inline-flex items-center gap-3 text-lg font-black tracking-[0.18em] text-ink',
+        'inline-flex items-center gap-2.5 text-lg font-semibold tracking-[-0.055em] text-ink',
         compactOnMobile && 'gap-0 md:gap-3',
         className,
       )}
@@ -24,17 +24,16 @@ export function Brand({
       aria-label={`B-SIDE · ${t('common.home')}`}
     >
       <svg
-        className="size-7 shrink-0 text-purple-light"
-        viewBox="0 0 64 64"
-        fill="currentColor"
+        className="size-7 shrink-0 text-ink"
+        viewBox="0 0 32 32"
+        fill="none"
         aria-hidden="true"
         focusable="false"
       >
-        <rect x="7" y="24" width="6" height="16" rx="3" />
-        <rect x="18" y="15" width="6" height="34" rx="3" />
-        <rect x="29" y="8" width="6" height="48" rx="3" />
-        <rect x="40" y="15" width="6" height="34" rx="3" />
-        <rect x="51" y="24" width="6" height="16" rx="3" />
+        <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="16" cy="16" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="16" cy="16" r="1" fill="currentColor" />
+        <path d="M7 12a10 10 0 0 1 5-5M20 25a10 10 0 0 0 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <span
         className={cn(

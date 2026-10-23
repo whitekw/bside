@@ -119,18 +119,18 @@ export function SongList({
 
   return (
     <>
-    <ol className="m-0 flex list-none flex-col gap-[7px] p-0">
+    <ol className="m-0 flex list-none flex-col gap-0 p-0">
       {songs.map((song) => (
         <li
           className={cn(
-            'relative flex min-h-[68px] items-center gap-[11px] rounded-[4px] border border-transparent bg-white/[0.035] p-2 transition-[border-color,background-color,opacity] hover:border-line hover:bg-white/[0.055]',
+            'relative flex h-14 shrink-0 items-center gap-3 rounded-[4px] border border-transparent px-2 py-[3px] transition-[border-color,background-color,opacity] hover:border-line hover:bg-white/[0.035]',
             onReorder && songs.length > 1 &&
               'cursor-grab select-none active:cursor-grabbing',
             draggedSongId === song.id && 'opacity-35',
             dropTarget?.songId === song.id && dropTarget.edge === 'before' &&
-              'before:absolute before:-top-1 before:right-2 before:left-2 before:h-0.5 before:rounded-full before:bg-lime before:shadow-[0_0_10px_rgba(215,255,100,.45)]',
+              'before:absolute before:-top-1 before:right-2 before:left-2 before:h-0.5 before:rounded-full before:bg-signal ',
             dropTarget?.songId === song.id && dropTarget.edge === 'after' &&
-              'after:absolute after:-bottom-1 after:right-2 after:left-2 after:h-0.5 after:rounded-full after:bg-lime after:shadow-[0_0_10px_rgba(215,255,100,.45)]',
+              'after:absolute after:-bottom-1 after:right-2 after:left-2 after:h-0.5 after:rounded-full after:bg-signal ',
           )}
           key={song.id}
           draggable={Boolean(onReorder && songs.length > 1)}
@@ -143,31 +143,31 @@ export function SongList({
           <img
             src={song.thumbnailUrl}
             alt=""
-            className="size-14 shrink-0 rounded-[4px] bg-[#17151c] object-cover"
+            className="size-12 shrink-0 rounded-[4px] bg-raised object-cover"
           />
           <div className="flex min-w-0 flex-1 flex-col">
-            <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px]">
+            <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-[18px] font-medium">
               {song.title}
             </strong>
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap pr-16 text-[11px] text-muted">
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap pr-16 text-[11px] leading-[14px] text-muted">
               {song.artist}
             </span>
-            <span className="mt-1 flex min-w-0 items-center gap-1.5 pr-16">
-              <span className="grid size-[18px] shrink-0 place-items-center overflow-hidden rounded-full border border-purple/25 bg-purple/[0.08] text-[10px] font-bold text-purple-light" aria-hidden="true">
+            <span className="flex min-w-0 items-center gap-1.5 pr-16">
+              <span className="grid size-4 shrink-0 place-items-center overflow-hidden rounded-full border border-accent/25 bg-accent/[0.08] text-[11px] font-bold text-ink" aria-hidden="true">
                 {song.addedByAvatarUrl ? (
                   <img className="size-full object-cover" src={song.addedByAvatarUrl} alt="" />
                 ) : (
                   song.addedBy.trim().slice(0, 1).toUpperCase()
                 )}
               </span>
-              <small className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] text-dim">
+              <small className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-4 text-dim">
                 {t('song.requestedBy', { nickname: song.addedBy })}
               </small>
             </span>
           </div>
           <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
             <button
-              className="grid size-7 place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted transition-colors hover:bg-purple/10 hover:text-purple-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-light"
+              className="grid size-7 place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted transition-colors hover:bg-accent/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-soft"
               type="button"
               draggable={false}
               aria-label={`${song.title} · ${t(savedByVideoId[song.videoId] ? 'library.savedInPlaylist' : 'library.addToPlaylist')}`}
@@ -178,7 +178,7 @@ export function SongList({
             </button>
             {onRemove && (canRemove?.(song) ?? true) && (
               <button
-                className="grid size-7 place-items-center rounded-[7px] border-0 bg-transparent p-0 text-[#847e8c] transition-colors hover:bg-danger/[0.08] hover:text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+                className="grid size-7 place-items-center rounded-[7px] border-0 bg-transparent p-0 text-dim transition-colors hover:bg-danger/[0.08] hover:text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
                 type="button"
                 draggable={false}
                 aria-label={`${song.title} · ${t('song.removeFromQueue')}`}

@@ -63,33 +63,33 @@ export function HomePage() {
       </div>
     }>
       <section className={cn(
-        'mx-auto grid w-full max-w-[920px] items-center gap-8 md:grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)] md:gap-16',
-        hasRooms ? 'mt-10 mb-10 md:mt-20 md:mb-14' : 'flex-1 content-center py-10 md:pt-12 md:pb-24',
+        'mx-auto grid w-full max-w-[1120px] items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] md:gap-16 lg:gap-24',
+        hasRooms ? 'mt-12 mb-12 md:mt-20 md:mb-16' : 'flex-1 content-center py-12 md:py-24',
       )}>
         <div>
-          <h1 className="text-[clamp(32px,4.4vw,48px)] leading-[1.2] font-bold tracking-[-0.045em] [word-break:keep-all]">
+          <h1 className="text-2xl leading-[1.35] font-medium tracking-[-0.045em] [word-break:keep-all] sm:text-[32px]">
             {t('home.headlineFirst')}<br />{t('home.headlineSecond')}
           </h1>
-          <p className="mt-5 mb-6 text-sm leading-7 text-muted [word-break:keep-all]">
+          <p className="mt-5 mb-8 max-w-[360px] text-base leading-7 text-muted [word-break:keep-all]">
             {t('home.heroDescription')}
           </p>
           {!user ? (
-            <button className={cn(buttonStyles({ intent: 'primary', size: 'lg' }), 'gap-6 rounded-md text-sm font-semibold')} type="button" disabled={authLoading} onClick={() => setLoginPromptOpen(true)} aria-haspopup="dialog">
+            <button className={cn(buttonStyles({ intent: 'primary', size: 'lg' }), 'gap-8 text-sm')} type="button" disabled={authLoading} onClick={() => setLoginPromptOpen(true)} aria-haspopup="dialog">
               {t('home.create')} <ArrowRight size={18} aria-hidden="true" />
             </button>
           ) : (
-            <Link className={cn(buttonStyles({ intent: 'primary', size: 'lg' }), 'gap-6 rounded-md text-sm font-semibold')} to="/rooms/new">
+            <Link className={cn(buttonStyles({ intent: 'primary', size: 'lg' }), 'gap-8 text-sm')} to="/rooms/new">
               {t('home.create')} <ArrowRight size={18} aria-hidden="true" />
             </Link>
           )}
         </div>
-        <form className="min-w-0 rounded-[18px] border border-line bg-[#15121e] p-6" onSubmit={joinRoom}>
-          <h2 className="text-xl font-bold tracking-[-0.03em]">{t('home.invitedTitle')}</h2>
+        <form className="min-w-0 rounded-lg bg-surface p-6 md:p-8" onSubmit={joinRoom}>
+          <h2 className="text-lg font-medium tracking-[-0.025em]">{t('home.invitedTitle')}</h2>
           <p className="mt-2 mb-5 text-[13px] leading-6 text-muted">{t('home.guestHint')}</p>
           <label className="mb-2 block text-xs text-muted" htmlFor="room-code">{t('home.sharedCodeLabel')}</label>
           <input
             id="room-code"
-            className={cn(formControlStyles({ size: 'large' }), 'bg-canvas text-base tracking-[0.18em] uppercase placeholder:text-muted/60')}
+            className={cn(formControlStyles({ size: 'large' }), 'bg-canvas text-base tracking-[0.18em] uppercase placeholder:text-dim')}
             value={roomCode}
             onChange={(event) => setRoomCode(normalizeRoomCode(event.target.value).slice(0, 6))}
             placeholder="ABC234"
@@ -107,23 +107,23 @@ export function HomePage() {
       </section>
 
       {ownedRooms.length > 0 && (
-        <section className="mx-auto mb-8 max-w-[920px] border-t border-line pt-6">
+        <section className="mx-auto mb-10 w-full max-w-[1120px] border-t border-line pt-6">
           <div className="mb-4">
             <h2 className="text-base font-bold tracking-[-0.02em]">
               {t('home.myRoomsTitle')}
             </h2>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
             {ownedRooms.map((room) => (
               <article
                 className={cn(
-                  'relative min-w-0 rounded-xl border border-line bg-white/[0.015]',
-                  'transition-colors hover:border-purple/60 hover:bg-purple/[0.08]',
+                  'relative min-w-0 rounded-md',
+                  'transition-colors hover:bg-surface',
                 )}
                 key={room.code}
               >
                 <Link
-                  className="group flex min-h-[104px] min-w-0 items-center gap-3 rounded-xl p-3.5 focus-visible:outline-2 focus-visible:outline-purple-light"
+                  className="group flex min-h-[96px] min-w-0 items-center gap-4 rounded-md p-3 focus-visible:outline-2 focus-visible:outline-accent-soft"
                   to={`/room/${room.code}`}
                 >
                   <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white/[0.035]">
@@ -134,7 +134,7 @@ export function HomePage() {
                         alt=""
                       />
                     ) : (
-                      <MusicIcon className="text-purple-light" size={22} />
+                      <MusicIcon className="text-ink" size={22} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export function HomePage() {
                   </div>
                   <ArrowRight
                     size={20}
-                    className="w-5 shrink-0 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-purple-light group-focus-visible:text-purple-light"
+                    className="w-5 shrink-0 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-ink group-focus-visible:text-ink"
                     aria-label={t('home.rejoinRoom')}
                   />
                 </Link>
@@ -164,7 +164,7 @@ export function HomePage() {
       {notice && <div className={noticeStyles()}>{notice}</div>}
 
       {joinedRooms.length > 0 && (
-        <section className="mx-auto mb-8 max-w-[920px] border-t border-line pt-6">
+        <section className="mx-auto mb-10 w-full max-w-[1120px] border-t border-line pt-6">
           <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-base font-bold tracking-[-0.02em]">
@@ -172,14 +172,14 @@ export function HomePage() {
               </h2>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
             {joinedRooms.map((room) => (
               <article
-                className="relative min-w-0 rounded-xl border border-line bg-white/[0.015] transition-colors hover:border-purple/50 hover:bg-purple/[0.08]"
+                className="relative min-w-0 rounded-md transition-colors hover:bg-surface"
                 key={room.code}
               >
                 <Link
-                  className="group flex min-h-[104px] min-w-0 items-center gap-3 rounded-xl p-3.5 pr-24 focus-visible:outline-2 focus-visible:outline-purple-light"
+                  className="group flex min-h-[104px] min-w-0 items-center gap-3 rounded-xl p-3.5 pr-24 focus-visible:outline-2 focus-visible:outline-accent-soft"
                   to={`/room/${room.code}`}
                 >
                   <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white/[0.035]">
@@ -190,7 +190,7 @@ export function HomePage() {
                         alt=""
                       />
                     ) : (
-                      <MusicIcon className="text-purple-light" size={22} />
+                      <MusicIcon className="text-ink" size={22} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -223,11 +223,11 @@ export function HomePage() {
         </section>
       )}
 
-      <footer className={cn('mx-auto flex w-full max-w-[920px] shrink-0 flex-wrap items-center justify-between gap-x-5 gap-y-2 pb-4 text-xs text-muted', hasRooms ? 'mt-10' : 'mt-auto')}>
+      <footer className={cn('mx-auto flex w-full max-w-[1120px] shrink-0 flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-line pt-5 pb-2 text-xs text-muted', hasRooms ? 'mt-10' : 'mt-auto')}>
         <span>Powered by YouTube</span>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link className="rounded-sm underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-purple-light" to="/terms">{t('terms.link')}</Link>
-          <Link className="rounded-sm underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-purple-light" to="/privacy">{t('privacy.link')}</Link>
+          <Link className="rounded-sm underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent-soft" to="/terms">{t('terms.link')}</Link>
+          <Link className="rounded-sm underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent-soft" to="/privacy">{t('privacy.link')}</Link>
         </div>
       </footer>
       <LoginRequiredDialog open={loginPromptOpen && !user} onClose={() => setLoginPromptOpen(false)} />

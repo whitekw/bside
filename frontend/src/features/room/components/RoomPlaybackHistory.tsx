@@ -154,14 +154,14 @@ export function RoomPlaybackHistory({ code, participantToken, revision, particip
           className={formControlStyles({ className: 'h-10 rounded-lg pr-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none' })} />
         {searchInput && <button type="button" aria-label={t('history.clearSearch')}
           onClick={() => setSearchInput('')}
-          className="absolute top-1/2 right-1 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-purple-light">
+          className="absolute top-1/2 right-1 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft">
           <X size={15} aria-hidden="true" />
         </button>}
       </div>
     </div>
     {error && <div role="alert" className="mb-4 flex items-center gap-3 rounded-lg border border-danger/25 px-3 py-2 text-sm text-danger">
       <span>{error}</span>
-      {items.length === 0 && <button type="button" className="ml-auto rounded-md p-1 text-purple-light hover:bg-white/10"
+      {items.length === 0 && <button type="button" className="ml-auto rounded-md p-1 text-ink hover:bg-white/10"
         aria-label={t('common.retry')} onClick={() => { setLoading(true); setRetry((value) => value + 1) }}>
         <RotateCw size={17} aria-hidden="true" />
       </button>}
@@ -173,19 +173,19 @@ export function RoomPlaybackHistory({ code, participantToken, revision, particip
         : <>
           <ol className="m-0 flex list-none flex-col gap-2 p-0">
             {items.map((entry) => <li key={entry.id}
-              className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 rounded-lg border border-line bg-panel p-3 transition-colors duration-150 hover:border-purple/40 hover:bg-purple/15 focus-within:border-purple/40 focus-within:bg-purple/15 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:items-center">
+              className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 rounded-lg border border-line bg-panel p-3 transition-colors duration-150 hover:border-accent/40 hover:bg-accent/15 focus-within:border-accent/40 focus-within:bg-accent/15 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:items-center">
               <img src={entry.thumbnailUrl} alt="" loading="lazy"
                 className="row-span-2 aspect-video w-[88px] rounded-md bg-black object-cover sm:row-span-1 sm:w-24" />
               <div className="min-w-0">
                 <a href={`https://www.youtube.com/watch?v=${encodeURIComponent(entry.videoId)}`}
                   target="_blank" rel="noopener noreferrer" title={entry.title}
-                  className="block truncate text-sm font-semibold text-ink hover:text-purple-light focus-visible:outline-2 focus-visible:outline-purple-light">
+                  className="block truncate text-sm font-semibold text-ink hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft">
                   {entry.title}
                 </a>
                 <p className="mt-0.5 truncate text-xs text-muted" title={entry.artist}>{entry.artist}</p>
                 <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="grid size-[18px] shrink-0 place-items-center overflow-hidden rounded-full border border-purple/25 bg-purple/[0.08] text-[10px] font-bold text-purple-light" aria-hidden="true">
+                    <span className="grid size-[18px] shrink-0 place-items-center overflow-hidden rounded-full border border-accent/25 bg-accent/[0.08] text-[11px] font-bold text-ink" aria-hidden="true">
                       {entry.isAutoplay ? <Shuffle size={11} aria-hidden="true" />
                         : entry.requesterAvatarUrl ? <img src={entry.requesterAvatarUrl} alt="" className="size-full object-cover" />
                         : entry.requester.trim().slice(0, 1).toUpperCase()}
@@ -202,7 +202,7 @@ export function RoomPlaybackHistory({ code, participantToken, revision, particip
                 <button type="button" aria-haspopup="dialog" onClick={() => setSaveSong(entry)}
                   aria-label={`${entry.title} · ${t(savedByVideoId[entry.videoId] ? 'library.savedInPlaylist' : 'library.addToPlaylist')}`}
                   title={t(savedByVideoId[entry.videoId] ? 'library.savedInPlaylist' : 'library.addToPlaylist')}
-                  className="grid size-9 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors hover:bg-purple/10 hover:text-purple-light focus-visible:outline-2 focus-visible:outline-purple-light">
+                  className="grid size-9 place-items-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors hover:bg-accent/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-soft">
                   <PlaylistSaveIcon saved={Boolean(savedByVideoId[entry.videoId])} />
                 </button>
                 <AddToQueueButton
@@ -215,12 +215,12 @@ export function RoomPlaybackHistory({ code, participantToken, revision, particip
             </li>)}
           </ol>
           {nextCursor && <button type="button" onClick={() => { void loadMore() }} disabled={loading || loadingMore}
-            className="mt-4 w-full rounded-lg border border-line bg-panel px-4 py-2.5 text-sm font-semibold text-purple-light transition-colors hover:bg-purple/10 focus-visible:outline-2 focus-visible:outline-purple-light disabled:opacity-50">
+            className="mt-4 w-full rounded-lg border border-line bg-panel px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent/10 focus-visible:outline-2 focus-visible:outline-accent-soft disabled:opacity-50">
             {loadingMore ? t('library.loading') : t('history.more')}
           </button>}
         </>}
     {roomError && <p className="mt-3 text-sm text-danger" role="alert">{roomError}</p>}
-    {message && !roomError && <p className="mt-3 text-sm text-lime" role="status">{message}</p>}
+    {message && !roomError && <p className="mt-3 text-sm text-signal" role="status">{message}</p>}
     {saveSong && <SaveToPlaylistDialog key={saveSong.id}
       song={{ videoId: saveSong.videoId, roomSongId: saveSong.id }}
       onClose={() => setSaveSong(null)}
