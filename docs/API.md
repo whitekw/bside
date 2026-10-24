@@ -57,6 +57,7 @@ type RoomState = {
   title: string
   allowGuests: boolean
   historyAutoplay: boolean
+  autoplayMode: 'random' | 'shuffle'
   autoplayHistoryCount: number
   autoplayPoolCount: number
   autoplayFilters: { excludedWords: string[]; excludedVideoIds: string[]; minDurationSeconds: number; maxDurationSeconds: number }
@@ -106,7 +107,9 @@ type Song = {
 
 `otherControlAvailableAt`은 신청자가 방을 나갔거나 연결이 끊긴 뒤 다른 참여자가 그 곡을 삭제·건너뛸 수 있게 되는 epoch ms 시각입니다. 신청자가 온라인이면 `null`입니다.
 
-`historyAutoplay`은 방 소유자가 설정한 재생기록 자동 재생 상태입니다. `autoplayHistoryCount`는 직접 신청되어 완료된 이전 재생 기록의 건수이며, 10건 이상일 때만 자동 재생을 켤 수 있습니다. `autoplaySuggestions`는 직접 추가한 대기열 뒤에 재생될 저장된 길이 범위의 이전 곡 최대 20개입니다. 같은 영상은 한 번만 표시하므로 가능한 후보가 20곡보다 적으면 있는 곡만 보여주고, 직접 추가한 대기열의 영상은 제외합니다. 현재 곡과 최근 재생 곡은 다른 후보가 있을 때 우선 제외합니다. 예정 순서는 저장되며, 자동 재생이 시작되면 첫 곡이 빠지고 중복되지 않는 다른 후보가 있을 때만 맨 아래에 새 곡이 추가됩니다. 예정 곡은 재생되기 전에는 별도 신청 건으로 저장되지 않습니다.
+`historyAutoplay`은 방 소유자 또는 관리자가 설정한 재생기록 자동 재생 상태입니다. `autoplayHistoryCount`는 직접 신청되어 완료된 이전 재생 기록의 건수이며, 10건 이상일 때만 자동 재생을 켤 수 있습니다. `autoplaySuggestions`는 직접 추가한 대기열 뒤에 재생될 저장된 길이 범위의 이전 곡 최대 20개입니다. 같은 영상은 한 번만 표시하므로 가능한 후보가 20곡보다 적으면 있는 곡만 보여주고, 직접 추가한 대기열의 영상은 제외합니다. `random` 방식에서 현재 곡과 최근 재생 곡은 다른 후보가 있을 때 우선 제외합니다. `random` 방식의 예정 순서는 저장되며, 자동 재생이 시작되면 첫 곡이 빠지고 중복되지 않는 다른 후보가 있을 때만 맨 아래에 새 곡이 추가됩니다. 예정 곡은 재생되기 전에는 별도 신청 건으로 저장되지 않습니다.
+
+`autoplayMode`는 `random`(랜덤 재생) 또는 `shuffle`(한 바퀴씩 섞기)입니다. `random`은 기존 방식으로 한 주기 내 반복을 막지 않습니다. `shuffle`은 영상 ID별 전체 후보 순서와 재생한 ID를 방에 저장합니다. 현재 주기의 모든 후보가 재생을 시작해야 새 주기를 섞으며, 주기 끝에서 예정 목록은 20곡보다 짧아질 수 있습니다. 수동 신청이 우선이며 실제 재생을 시작한 영상도 현재 주기에서 소진됩니다. 대기열에만 있거나 재생 전에 삭제된 신청은 소진되지 않습니다. 새 후보는 현재 주기에 추가되고, 필터 변경·일시 비활성화·재시작은 소진 상태를 유지합니다. 주기 경계에서 선택지가 있으면 직전 곡과 다른 곡을 먼저 재생합니다. 방식 변경은 새 주기를 시작하며 현재 곡·수동 대기열은 유지합니다. 기존 방은 `random`, 새 방은 `shuffle`이 기본입니다. 운영 도구로 재생 기록을 삭제하면 해당 방의 섞기 진행 상태도 초기화합니다.
 
 `autoplayFilters`는 방별 자동 재생 조건입니다. `minDurationSeconds`와 `maxDurationSeconds`는 양 끝을 포함하는 영상 길이 범위이며 기본값은 0초~600초입니다. `excludedWords`는 영상 제목에 포함된 문자열을 대소문자 구분 없이 검사하며, `excludedVideoIds`는 영상 ID가 일치하는 후보를 제외합니다. `autoplayPoolCount`는 저장된 조건을 적용한 뒤 남은 직접 재생 기록의 고유 영상 수입니다. 현재 곡과 수동 대기열은 이 수에서 제외하지 않으며, 자동 재생을 꺼도 풀 크기를 볼 수 있습니다. 기존 예정 목록도 필터를 저장하면 다시 생성됩니다. 수동 신청 곡에는 필터를 적용하지 않습니다.
 
@@ -660,15 +663,23 @@ YouTube IFrame의 영상 없음·비공개 오류 `100`, 외부 재생 금지 �
 
 ### `POST /api/rooms/:code/autoplay/refresh`
 
-필수 권한: controller. 자동 재생이 켜진 방의 예정 목록을 다시 무작위로 뽑아 모든 참여자에게 `room:state`로 전달합니다. 현재 재생 곡과 직접 추가한 대기열은 유지합니다. 후보는 영상별로 중복 없이 최대 20곡이며, 선택지가 둘 이상이면 이전 목록의 첫 곡과 다른 곡을 맨 앞에 둡니다. 자동 재생이 꺼져 있으면 `409 HISTORY_AUTOPLAY_DISABLED`입니다.
+필수 권한: controller. 자동 재생이 켜진 방의 예정 목록을 다시 섞어 모든 참여자에게 `room:state`로 전달합니다. `shuffle`에서는 현재 주기의 아직 재생하지 않은 후보만 다시 섞고 소진 상태를 유지합니다. 현재 재생 곡과 직접 추가한 대기열은 유지합니다. 후보는 영상별로 중복 없이 최대 20곡이며, 현재 곡을 제외한 선택지가 둘 이상이면 이전 목록의 첫 곡과 다른 곡을 맨 앞에 둡니다. 자동 재생이 꺼져 있으면 `409 HISTORY_AUTOPLAY_DISABLED`입니다.
 
 ### `GET /api/rooms/:code/autoplay/history-videos`
 
-방 소유자 로그인 세션이 필요합니다. 자동 재생 대상이 될 수 있는 직접 신청·재생 완료 기록 중 저장된 영상 길이 범위에 해당하는 영상을 ID별로 중복 제거해 최근 재생순으로 돌려줍니다. `q`는 제목·아티스트 검색어(최대 100자), `offset`은 0부터 시작하는 페이지 위치입니다. 응답의 `items`는 최대 30개이며 `{ videoId, title, artist, durationSeconds, thumbnailUrl, startedAt }` 항목을 포함합니다. `nextOffset`이 `null`이면 마지막 페이지입니다. `excludedVideos`에는 길이 범위 밖이라도 현재 제외 목록에 있는 영상의 메타데이터가 포함됩니다. 잘못된 검색 조건에는 `400 INVALID_AUTOPLAY_SEARCH`를 반환합니다.
+방 소유자 또는 로그인한 방 관리자의 권한이 필요합니다. 자동 재생 대상이 될 수 있는 직접 신청·재생 완료 기록 중 저장된 영상 길이 범위에 해당하는 영상을 ID별로 중복 제거해 최근 재생순으로 돌려줍니다. `q`는 제목·아티스트 검색어(최대 100자), `offset`은 0부터 시작하는 페이지 위치입니다. 응답의 `items`는 최대 30개이며 `{ videoId, title, artist, durationSeconds, thumbnailUrl, startedAt }` 항목을 포함합니다. `nextOffset`이 `null`이면 마지막 페이지입니다. `excludedVideos`에는 길이 범위 밖이라도 현재 제외 목록에 있는 영상의 메타데이터가 포함됩니다. 잘못된 검색 조건에는 `400 INVALID_AUTOPLAY_SEARCH`를 반환합니다.
+
+### `GET /api/rooms/:code/management-history`
+
+방 소유자 또는 로그인한 방 관리자만 조회할 수 있습니다. 일반 참여자·비로그인 사용자와 호스트 기기 토큰만 있는 사용자는 조회할 수 없습니다. 최신순으로 최대 30건을 반환하며 `before`에 이전 응답의 `nextCursor`를 전달해 더 오래된 이력을 조회합니다. 잘못된 커서는 `400 INVALID_MANAGEMENT_CURSOR`입니다. 시각이 같아도 고유 순번을 사용하므로 페이지 사이 새 기록이 추가되어도 중복·누락되지 않습니다.
+
+응답은 `{ items, nextCursor }`이며 항목은 `{ id, actorName, actorRole, targetName, action, changes, createdAt }`입니다. `createdAt`은 epoch ms이며 화면에서는 조회 기기의 현지 시각과 초 단위까지 표시합니다. `actorRole`은 `owner | manager | host`, `action`은 `settings_changed | autoplay_refreshed | manager_changed`입니다. 설정 이력은 변경된 필드의 `{ field, before, after }`를 포함합니다. `excludedWords`는 `{ field, added: string[], removed: string[] }`, `excludedVideos`는 `{ field, added, removed }`이며 각 영상에 `{ videoId, title, artist }`를 당시 값으로 저장합니다. 영상 메타데이터를 찾지 못하면 ID를 제목 대신 표시합니다. 관리자 권한 변경은 `targetName`과 `{ field: 'isManager', before, after }`를 포함합니다. 탈퇴한 행위자·대상의 이름은 `null`로 익명화합니다. 인증 토큰이나 Discord ID는 반환하지 않습니다.
+
+실제로 바뀐 방 이름·게스트 허용·자동재생 켜기/끄기·방식·길이 범위·제외 단어/영상·호스트 음량을 저장 성공과 같은 트랜잭션에 기록합니다. 같은 값 재저장·제외 목록 순서 변경·거부/실패한 요청은 이력을 만들지 않습니다. 자동재생 예정 목록 새로고침과 관리자 지정·해제도 기록합니다. 일반 재생 진행이나 자동 후보 보충은 기록하지 않습니다. 이 기능 적용 이후의 변경부터 기록하며 과거 내역은 추정해 생성하지 않습니다. 이력 수정·삭제 API는 제공하지 않으며 방 삭제 시 함께 삭제됩니다. 방의 재생/채팅 기록을 정리해도 관리 이력은 유지됩니다.
 
 ### `PATCH /api/rooms/:code/settings`
 
-`hostVolume`은 controller 권한, `title`, `allowGuests`, `historyAutoplay`, `autoplayFilters`는 방 소유자의 로그인 세션이 필요합니다.
+`hostVolume`은 controller 권한, `historyAutoplay`, `autoplayMode`, `autoplayFilters`는 방 소유자 또는 로그인한 방 관리자의 권한이 필요합니다. 일반 설정인 `title`, `allowGuests`와 방 삭제는 방 소유자의 로그인 세션이 필요합니다. 프론트엔드는 관리자에게 일반 탭을 표시하지 않습니다.
 
 ```json
 {
@@ -679,6 +690,7 @@ YouTube IFrame의 영상 없음·비공개 오류 `100`, 외부 재생 금지 �
 - `hostVolume`: 정수 `0..100`
 - `title`: 공백을 제거한 최대 60자 문자열. 빈 문자열로 변경하면 방 코드를 사용합니다.
 - `allowGuests`: boolean. `false`로 변경해도 이미 참여한 익명 사용자는 자동으로 연결 해제되지 않습니다.
+- `autoplayMode`: `random` 또는 `shuffle`. 잘못된 값은 `400 INVALID_AUTOPLAY_MODE`를 반환합니다.
 - `historyAutoplay`: boolean. 켜려면 직접 신청된 이전 재생 기록이 최소 10건 필요하며, 부족하면 `409 AUTOPLAY_HISTORY_REQUIRED`입니다. 직접 추가한 대기열이 비면 저장된 길이 범위의 곡 중 하나를 새 재생 건으로 만들며, 이전 추천·비추천과 신청자별 통계는 이어받지 않습니다. 방이 비어 있을 때 켜면 즉시 한 곡을 시작합니다. 끄더라도 이미 재생 중인 자동 재생 곡은 유지합니다.
 - `autoplayFilters`: `{ "excludedWords": string[], "excludedVideoIds": string[], "minDurationSeconds": number, "maxDurationSeconds": number }`. 길이는 정수 초 단위이며 0초 이상, 최대 24시간 이하, 최소값이 최대값 이하여야 합니다. 길이 값 생략 시 현재 설정을 유지합니다. 제목 제외 단어는 공백을 뺀 1~80자, 최대 50개이며 대소문자 구분 없이 중복을 제거합니다. 영상 제외는 유효한 YouTube URL 또는 11자리 영상 ID를 최대 100개 받으며 ID로 정규화·중복 제거합니다. 잘못된 값에는 `400 INVALID_AUTOPLAY_FILTERS` 또는 `400 INVALID_AUTOPLAY_DURATION`을 반환합니다. 저장 시 예정 목록을 새 조건에 맞게 다시 생성합니다.
 

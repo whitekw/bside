@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { appendExcludedWord, createRoomSettingsDraft, getDurationErrorField, hasRoomSettingsChanges } from '../src/features/room/roomSettingsDraft.ts'
 
-const room = { title: 'Music', allowGuests: true, historyAutoplay: true,
+const room = { title: 'Music', allowGuests: true, historyAutoplay: true, autoplayMode: 'shuffle',
   autoplayFilters: { excludedWords: ['live'], excludedVideoIds: [], minDurationSeconds: 60, maxDurationSeconds: 600 } }
 
 test('pending keywords are included on save, trimmed and deduplicated', () => {
@@ -34,6 +34,7 @@ test('duration validation identifies the input to focus across tab changes', () 
 test('draft status detects pending inputs and returns to clean after a reset', () => {
   const draft = createRoomSettingsDraft(room)
   assert.equal(hasRoomSettingsChanges(draft, room), false)
+  assert.equal(hasRoomSettingsChanges({ ...draft, autoplayMode: 'random' }, room), true)
   assert.equal(hasRoomSettingsChanges({ ...draft, wordInput: 'remix' }, room), true)
   assert.equal(hasRoomSettingsChanges({ ...draft, excludedVideoIds: ['video'] }, room), true)
   assert.equal(hasRoomSettingsChanges(createRoomSettingsDraft(room), room), false)

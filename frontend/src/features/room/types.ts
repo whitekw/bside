@@ -22,6 +22,7 @@ export type RoomState = {
   title: string
   allowGuests: boolean
   historyAutoplay: boolean
+  autoplayMode: 'random' | 'shuffle'
   autoplayHistoryCount: number
   autoplayPoolCount: number
   autoplayFilters: AutoplayFilters
@@ -48,6 +49,27 @@ export type AutoplaySuggestion = {
   durationSeconds: number
   thumbnailUrl: string
 }
+
+export type RoomManagementChange =
+  | { field: 'title'; before: string; after: string }
+  | { field: 'autoplayMode'; before: 'random' | 'shuffle'; after: 'random' | 'shuffle' }
+  | { field: 'allowGuests' | 'historyAutoplay' | 'isManager'; before: boolean; after: boolean }
+  | { field: 'hostVolume' | 'minDurationSeconds' | 'maxDurationSeconds'; before: number; after: number }
+  | { field: 'excludedWords'; added: string[]; removed: string[] }
+  | { field: 'excludedVideos'; added: { videoId: string; title: string; artist: string }[];
+      removed: { videoId: string; title: string; artist: string }[] }
+
+export type RoomManagementEntry = {
+  id: string
+  actorName: string | null
+  actorRole: 'owner' | 'manager' | 'host'
+  targetName: string | null
+  action: 'settings_changed' | 'autoplay_refreshed' | 'manager_changed'
+  changes: RoomManagementChange[]
+  createdAt: number
+}
+
+export type RoomManagementPage = { items: RoomManagementEntry[]; nextCursor: string | null }
 
 export type AutoplayHistoryVideo = {
   videoId: string

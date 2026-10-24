@@ -5,14 +5,16 @@ import { buttonStyles, cn, formControlStyles } from '../../../shared/styles'
 import { PanelHeader } from '../../../shared/ui/PanelHeader'
 import type { RoomState } from '../types'
 import { AutoplayFilterEditor } from './AutoplayFilterEditor'
+import { RoomManagementHistory } from './RoomManagementHistory'
 import { appendExcludedWord, createRoomSettingsDraft, getDurationErrorField, hasRoomSettingsChanges,
-  type DurationField, type RoomSettings, type RoomSettingsDraft } from '../roomSettingsDraft'
+  type DurationField, type RoomSettingsUpdate, type RoomSettingsDraft } from '../roomSettingsDraft'
 
-export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete, onClose }: {
+export function RoomSettingsPanel({ room, isOwner, draft, onDraftChange, onSave, onDelete, onClose }: {
   room: RoomState
+  isOwner: boolean
   draft: RoomSettingsDraft
   onDraftChange: (draft: RoomSettingsDraft) => void
-  onSave: (settings: RoomSettings) => Promise<void>
+  onSave: (settings: RoomSettingsUpdate) => Promise<void>
   onDelete: (confirmationName: string) => Promise<void>
   onClose: () => void
 }) {
@@ -29,7 +31,9 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
   const [deleteName, setDeleteName] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
-  const [tab, setTab] = useState<'general' | 'autoplay'>('general')
+  const [selectedTab, setTab] = useState<'general' | 'autoplay' | 'history'>(isOwner ? 'general' : 'autoplay')
+  const tabs: readonly ('general' | 'autoplay' | 'history')[] = isOwner ? ['general', 'autoplay', 'history'] : ['autoplay', 'history']
+  const tab = !isOwner && selectedTab === 'general' ? 'autoplay' : selectedTab
   const confirmationName = room.title || room.code
   const dirty = hasRoomSettingsChanges(draft, room)
   const busyRef = useRef(false)
@@ -80,7 +84,7 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (busyRef.current) return
+    if (busyRef.current || tab === 'history') return
     const invalidDuration = getDurationErrorField(draft)
     setDurationError(invalidDuration)
     if (invalidDuration) {
@@ -102,9 +106,9 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
     setError('')
     try {
       await onSave({
-        title,
-        allowGuests,
+        ...(isOwner ? { title, allowGuests } : {}),
         historyAutoplay,
+        autoplayMode: draft.autoplayMode,
         autoplayFilters: {
           excludedWords: words,
           excludedVideoIds,
@@ -143,27 +147,30 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
     <form className="flex min-h-0 flex-1 flex-col" noValidate
       onSubmit={(event) => void submit(event)}>
       <div className="flex shrink-0 gap-1 border-b border-line px-4 sm:px-6" role="tablist" aria-label={t('roomSettings.heading')}>
-        {(['general', 'autoplay'] as const).map((option) => <button key={option} type="button"
+        {tabs.map((option) => <button key={option} type="button"
           id={`${titleId}-${option}-tab`} role="tab" aria-selected={tab === option}
           aria-controls={`${titleId}-${option}-panel`} tabIndex={tab === option ? 0 : -1}
           onClick={() => setTab(option)} onKeyDown={(event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
             event.preventDefault()
-            const next = event.key === 'Home' ? 'general' : event.key === 'End' ? 'autoplay'
-              : option === 'general' ? 'autoplay' : 'general'
+            const index = tabs.indexOf(option)
+            const next = tabs[event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+              : (index + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) % tabs.length]
             setTab(next)
             const target = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-              [next === 'general' ? 0 : 1]
+              [tabs.indexOf(next)]
             target?.focus()
           }}
           className={cn('border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft',
             tab === option ? 'border-accent-soft text-ink' : 'border-transparent text-muted hover:text-ink')}>
-          {t(option === 'general' ? 'roomSettings.general' : 'roomSettings.autoplaySection')}
+          {t(option === 'general' ? 'roomSettings.general' : option === 'history' ? 'roomManagement.heading' : 'roomSettings.autoplaySection')}
         </button>)}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 [scrollbar-width:thin] sm:px-6">
         <div className="mx-auto w-full max-w-4xl pb-2">
-          {tab === 'general' ? <section id={`${titleId}-general-panel`} role="tabpanel"
+          {tab === 'history' ? <section id={`${titleId}-history-panel`} role="tabpanel" aria-labelledby={`${titleId}-history-tab`}>
+            <RoomManagementHistory key={room.code} code={room.code} />
+          </section> : isOwner && tab === 'general' ? <section id={`${titleId}-general-panel`} role="tabpanel"
             aria-labelledby={`${titleId}-general-tab`}>
             <div className="space-y-5 rounded-xl border border-line bg-panel p-4 @[36rem]/settings:p-5">
               <div className="min-w-0">
@@ -222,6 +229,18 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
                     checked={historyAutoplay} onChange={(event) => updateDraft({ historyAutoplay: event.target.checked })}
                     disabled={saving || deleting || room.autoplayHistoryCount < 10} />
                 </label>
+              <fieldset className="mt-5 space-y-3 border-t border-line pt-5" disabled={saving || deleting}>
+                <legend className="sr-only">{t('roomSettings.autoplayMode')}</legend>
+                <h4 className="text-sm font-semibold">{t('roomSettings.autoplayMode')}</h4>
+                {(['random', 'shuffle'] as const).map((mode) => <label key={mode}
+                  className="flex cursor-pointer items-start gap-3 text-sm">
+                  <input type="radio" name={`${titleId}-autoplay-mode`} value={mode}
+                    checked={draft.autoplayMode === mode} onChange={() => updateDraft({ autoplayMode: mode })}
+                    className="mt-0.5 size-4 shrink-0 accent-accent-soft" />
+                  <span><strong className="block font-semibold">{t(`roomSettings.mode.${mode}`)}</strong>
+                    <span className="mt-1 block text-xs leading-5 text-muted">{t(`roomSettings.mode.${mode}Hint`)}</span></span>
+                </label>)}
+              </fieldset>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-accent/10 px-3 py-2">
                 <span className="text-xs text-muted">{t('roomSettings.poolLabel')}</span>
                 <strong className="text-sm tabular-nums text-ink">{t('roomSettings.poolCount', { count: room.autoplayPoolCount })}</strong>
@@ -269,7 +288,7 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
           </section>}
         </div>
       </div>
-      <div className="shrink-0 border-t border-line bg-canvas px-4 py-3 sm:px-6">
+      {tab !== 'history' && <div className="shrink-0 border-t border-line bg-canvas px-4 py-3 sm:px-6">
         {error && <p className="mb-3 text-sm text-danger" role="alert">{error}</p>}
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3">
           <p className="min-w-0 basis-full text-xs text-muted @[36rem]/settings:flex-1 @[36rem]/settings:basis-auto" role="status">
@@ -282,7 +301,7 @@ export function RoomSettingsPanel({ room, draft, onDraftChange, onSave, onDelete
           <button className={cn(buttonStyles({ intent: 'primary', size: 'md' }), 'min-w-28 flex-1 @[36rem]/settings:flex-none')}
             type="submit" disabled={saving || deleting || !dirty}>{saving ? t('roomSettings.saving') : t('roomSettings.save')}</button>
         </div>
-      </div>
+      </div>}
     </form>
   </section>
 }

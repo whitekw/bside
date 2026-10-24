@@ -80,6 +80,7 @@ function deleteRoomVideoRecords(db, { room, preview, feedQuery, feedParams }) {
   const excluded = JSON.parse(room.autoplay_excluded_video_ids).filter((id) => id !== preview.target.videoId)
   db.prepare('UPDATE rooms SET autoplay_excluded_video_ids = ? WHERE id = ?').run(JSON.stringify(excluded), room.id)
   db.prepare('DELETE FROM room_autoplay_suggestions WHERE room_id = ?').run(room.id)
+  db.prepare(`UPDATE rooms SET autoplay_shuffle_state = '{"order":[],"played":[]}' WHERE id = ?`).run(room.id)
 }
 
 module.exports = { ROOM_VIDEOS_QUERY, readRoomVideoRecords, deleteRoomVideoRecords }

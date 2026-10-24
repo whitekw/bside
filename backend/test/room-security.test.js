@@ -104,6 +104,52 @@ async function connectPollingSocket(baseUrl, cookie) {
   }
 }
 
+test('manager HTTP settings and candidate search work while general fields and deletion are forbidden',
+  { timeout: 10_000 }, async () => {
+    await withServer((db) => {
+      db.exec(`INSERT INTO users (id, discord_id, username, created_at, updated_at, last_login_at)
+        VALUES ('owner', 'owner', 'Owner', 1, 1, 1), ('manager', 'manager', 'Manager', 1, 1, 1);`)
+      const token = crypto.randomBytes(32).toString('base64url')
+      db.prepare(`INSERT INTO auth_sessions (id, user_id, token_hash, created_at, expires_at)
+        VALUES ('session', 'manager', ?, ?, ?)`).run(hashToken(token), Date.now(), Date.now() + 60_000)
+      const rooms = createRoomService(db)
+      const room = rooms.createRoom({ ownerUserId: 'owner' })
+      const manager = rooms.joinRoom(room.code, { userId: 'manager', nickname: 'Manager' })
+      rooms.setManager(room.code, { userId: 'owner' }, manager.participant.id, true)
+      return { room, token }
+    }, async ({ baseUrl, fixture }) => {
+      const url = `${baseUrl}/api/rooms/${fixture.room.code}`
+      const headers = { Cookie: `jukebox_session=${fixture.token}`, 'Content-Type': 'application/json', Origin: baseUrl }
+      const patch = (settings) => fetch(`${url}/settings`, { method: 'PATCH', headers, body: JSON.stringify(settings) })
+      const allowed = await patch({ autoplayMode: 'random', historyAutoplay: false,
+        autoplayFilters: { excludedWords: ['live'], excludedVideoIds: [] } })
+      assert.equal(allowed.status, 200)
+      assert.equal((await allowed.json()).autoplayMode, 'random')
+      const history = await fetch(`${url}/management-history`, { headers })
+      assert.equal(history.status, 200)
+      const historyPage = await history.json()
+      assert.equal(historyPage.items[0].actorName, 'Manager')
+      assert.equal(historyPage.items[0].actorRole, 'manager')
+      assert.ok(historyPage.items[0].changes.some((change) => change.field === 'excludedWords'))
+      assert.equal((await fetch(`${url}/management-history`)).status, 401)
+      assert.equal((await fetch(`${url}/management-history?before=bad`, { headers })).status, 400)
+      const search = await fetch(`${url}/autoplay/history-videos`, { headers })
+      assert.equal(search.status, 200)
+      assert.deepEqual((await search.json()).items, [])
+      for (const settings of [{ title: 'changed' }, { allowGuests: false }, { title: 'changed', autoplayMode: 'shuffle' }]) {
+        const denied = await patch(settings)
+        assert.equal(denied.status, 403)
+        assert.equal((await denied.json()).error.code, 'OWNER_FORBIDDEN')
+      }
+      const deniedDelete = await fetch(url, { method: 'DELETE', headers,
+        body: JSON.stringify({ confirmationName: fixture.room.code }) })
+      assert.equal(deniedDelete.status, 403)
+      const state = await (await fetch(url)).json()
+      assert.equal(state.autoplayMode, 'random')
+      assert.equal(state.allowGuests, true)
+    })
+  })
+
 test('switching rooms clears the former presence and chat posts are limited per participant',
   { timeout: 10_000 }, async () => {
     await withServer((db) => {

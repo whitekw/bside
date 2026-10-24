@@ -7,6 +7,61 @@ const { DatabaseSync } = require('node:sqlite')
 const { createDatabase } = require('../src/db')
 const { createLibraryService } = require('../src/library')
 
+test('version 17 adds persistent room management history without changing room settings', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'jukebox-management-schema-'))
+  const databasePath = path.join(directory, 'test.sqlite')
+  let db
+  try {
+    db = createDatabase(databasePath)
+    db.exec(`INSERT INTO rooms (id, code, title, host_token_hash, created_at, autoplay_mode)
+      VALUES ('room', 'ABC234', 'Keep', '', 1, 'shuffle');
+      DROP TABLE room_management_entries; PRAGMA user_version = 17;`)
+    db.close()
+    db = createDatabase(databasePath)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
+    assert.equal(db.prepare("SELECT autoplay_mode FROM rooms WHERE id = 'room'").get().autoplay_mode, 'shuffle')
+    db.prepare(`INSERT INTO room_management_entries (room_id, actor_role, action, changes, created_at)
+      VALUES ('room', 'host', 'autoplay_refreshed', '[]', 1)`).run()
+    db.close()
+    db = createDatabase(databasePath)
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM room_management_entries').get().count, 1)
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
+  } finally {
+    if (db?.isOpen) db.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('version 16 rooms retain random playback and shuffle progress survives reopening', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'jukebox-autoplay-schema-'))
+  const databasePath = path.join(directory, 'test.sqlite')
+  let db
+  try {
+    db = createDatabase(databasePath)
+    db.exec(`INSERT INTO rooms (id, code, title, host_token_hash, created_at, history_autoplay)
+      VALUES ('room', 'ABC234', 'Keep', '', 1, 1);
+      ALTER TABLE rooms DROP COLUMN autoplay_mode;
+      ALTER TABLE rooms DROP COLUMN autoplay_shuffle_state;
+      PRAGMA user_version = 16;`)
+    db.close()
+    db = createDatabase(databasePath)
+    const room = db.prepare("SELECT * FROM rooms WHERE id = 'room'").get()
+    assert.equal(room.autoplay_mode, 'random')
+    assert.equal(room.title, 'Keep')
+    assert.equal(room.history_autoplay, 1)
+    assert.deepEqual(JSON.parse(room.autoplay_shuffle_state), { order: [], played: [] })
+    const progress = JSON.stringify({ order: ['video-a', 'video-b'], played: ['video-a'] })
+    db.prepare("UPDATE rooms SET autoplay_mode = 'shuffle', autoplay_shuffle_state = ? WHERE id = 'room'").run(progress)
+    db.close()
+    db = createDatabase(databasePath)
+    assert.equal(db.prepare("SELECT autoplay_shuffle_state FROM rooms WHERE id = 'room'").get().autoplay_shuffle_state, progress)
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
+  } finally {
+    if (db?.isOpen) db.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('upgrades version 15 without losing accounts and persists collected usage on reopening', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'jukebox-usage-schema-'))
   const databasePath = path.join(directory, 'test.sqlite')
@@ -16,7 +71,7 @@ test('upgrades version 15 without losing accounts and persists collected usage o
       DROP TABLE youtube_api_usage; DROP TABLE youtube_usage_state; PRAGMA user_version = 15;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare("SELECT username FROM users WHERE id = 'u'").get().username, 'Keep')
     db.prepare('INSERT INTO youtube_api_usage (day, source, method, requests, last_requested_at) VALUES (?, ?, ?, ?, ?)').run('2026-10-19','search','search',3,1)
     db.close()
@@ -38,7 +93,7 @@ test('upgrades version 14 accounts without losing users or playlists', () => {
       ALTER TABLE users DROP COLUMN custom_name; ALTER TABLE users DROP COLUMN custom_avatar; PRAGMA user_version = 14;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare("SELECT username FROM users WHERE id = 'u1'").get().username, 'Alice')
     assert.equal(db.prepare("SELECT name FROM playlists WHERE id = 'p1'").get().name, 'Saved')
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM youtube_connections').get().count, 0)
@@ -52,7 +107,7 @@ test('creates the current schema and reopens it without data loss', () => {
   const databasePath = path.join(directory, 'jukebox.sqlite')
   try {
     let db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     const roomColumns = db.prepare('PRAGMA table_info(rooms)').all().map(({ name }) => name)
     assert.ok(roomColumns.includes('owner_user_id'))
     assert.ok(roomColumns.includes('title'))
@@ -79,7 +134,7 @@ test('creates the current schema and reopens it without data loss', () => {
     ).run()
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(
       db.prepare("SELECT host_token_hash FROM rooms WHERE code = 'ABC234'").get().host_token_hash,
       '',
@@ -104,7 +159,7 @@ test('upgrades version 1 databases without deleting rooms', () => {
     db.close()
 
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare("SELECT code FROM rooms WHERE id = 'room-1'").get().code, 'ABC234')
     assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'extension_sessions'").get())
     db.close()
@@ -126,7 +181,7 @@ test('upgrades existing rooms with a code title and guest access enabled', () =>
     db.close()
 
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     const room = db.prepare("SELECT title, allow_guests FROM rooms WHERE code = 'ABC234'").get()
     db.close()
     assert.equal(room.title, 'ABC234')
@@ -146,7 +201,7 @@ test('upgrades version 3 databases with personal playlists and keeps songs', () 
     db.exec('DROP TABLE playlist_tracks; DROP TABLE playlists; DROP TABLE library_tracks; PRAGMA user_version = 3;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare("SELECT code FROM rooms WHERE id = 'room-1'").get().code, 'ABC234')
     assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'playlist_tracks'").get())
     db.close()
@@ -174,7 +229,7 @@ test('upgrades version 4 playlists to creation order without losing tracks', () 
     db.exec('DROP INDEX playlists_by_owner_position; ALTER TABLE playlists DROP COLUMN position; PRAGMA user_version = 4;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual(db.prepare('SELECT id, position FROM playlists ORDER BY position').all().map(({ id, position }) => ({ id, position })), [
       { id: 'favorite', position: 0 },
       { id: 'older', position: 1 },
@@ -211,7 +266,7 @@ test('upgrades version 5 rooms for song votes without losing songs', () => {
     db.exec('DROP TABLE song_votes; ALTER TABLE songs DROP COLUMN vote_revision; PRAGMA user_version = 5;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare('SELECT title, vote_revision FROM songs WHERE id = ?').get('song-1').title, 'Song')
     assert.equal(db.prepare('SELECT vote_revision FROM songs WHERE id = ?').get('song-1').vote_revision, 0)
     assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'song_votes'").get())
@@ -245,7 +300,7 @@ test('upgrades version 6 playback history with estimated dates for existing play
     db.close()
 
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual(db.prepare('SELECT id, started_at, started_at_estimated FROM songs ORDER BY created_at').all()
       .map(({ id, started_at, started_at_estimated }) => ({ id, started_at, started_at_estimated })), [
       { id: 'played', started_at: 100, started_at_estimated: 1 },
@@ -276,7 +331,7 @@ test('adds history autoplay fields to version 7 rooms without changing saved pla
       PRAGMA user_version = 7;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     const savedSong = db.prepare('SELECT title, is_autoplay FROM songs WHERE id = ?').get('played')
     assert.equal(savedSong.title, 'Played')
     assert.equal(savedSong.is_autoplay, 0)
@@ -298,7 +353,7 @@ test('upgrades version 8 rooms with a persistent autoplay suggestion queue', () 
     db.exec('DROP TABLE room_autoplay_suggestions; PRAGMA user_version = 8;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.equal(db.prepare("SELECT history_autoplay FROM rooms WHERE id = 'room-1'").get().history_autoplay, 1)
     assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'room_autoplay_suggestions'").get())
   } finally {
@@ -316,7 +371,7 @@ test('upgrades version 9 databases with an admin audit log', () => {
     db.exec('DROP TABLE admin_audit_entries; PRAGMA user_version = 9;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'admin_audit_entries'").get())
   } finally {
     db?.close()
@@ -337,7 +392,7 @@ test('upgrades version 10 rooms with empty autoplay filters without losing setti
       PRAGMA user_version = 10;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual({ ...db.prepare(`SELECT history_autoplay, autoplay_excluded_words,
       autoplay_excluded_video_ids FROM rooms WHERE id = 'room-1'`).get() }, {
       history_autoplay: 1,
@@ -363,7 +418,7 @@ test('upgrades version 11 rooms with the original ten-minute autoplay limit', ()
       PRAGMA user_version = 11;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual({ ...db.prepare(`SELECT autoplay_min_duration_seconds,
       autoplay_max_duration_seconds FROM rooms WHERE id = 'room-1'`).get() }, {
       autoplay_min_duration_seconds: 0,
@@ -394,7 +449,7 @@ test('upgrades version 12 songs while preserving successful playback history', (
       PRAGMA user_version = 12;`)
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual({ ...db.prepare('SELECT status, started_at, playback_error_code FROM songs WHERE id = ?')
       .get('song-1') }, { status: 'played', started_at: 1234, playback_error_code: null })
   } finally {
@@ -420,7 +475,7 @@ test('upgrades version 13 without guessing which past plays were early skips', (
     db.exec('ALTER TABLE songs DROP COLUMN play_count_excluded; PRAGMA user_version = 13;')
     db.close()
     db = createDatabase(databasePath)
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 16)
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 18)
     assert.deepEqual({ ...db.prepare('SELECT started_at, status, play_count_excluded FROM songs WHERE id = ?').get('song-1') },
       { started_at: 1234, status: 'played', play_count_excluded: 0 })
     db.prepare('UPDATE songs SET play_count_excluded = 1 WHERE id = ?').run('song-1')

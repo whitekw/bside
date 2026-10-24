@@ -81,6 +81,7 @@ function deleteRoomUserRecords(db, records) {
   db.prepare(`DELETE FROM participants WHERE room_id = ? AND ${records.preview.target.userId ? 'user_id = ?' : 'id = ?'}`)
     .run(room.id, identity)
   db.prepare('DELETE FROM room_autoplay_suggestions WHERE room_id = ?').run(room.id)
+  db.prepare(`UPDATE rooms SET autoplay_shuffle_state = '{"order":[],"played":[]}' WHERE id = ?`).run(room.id)
 }
 
 module.exports = { readRoomUserRecords, deleteRoomUserRecords }

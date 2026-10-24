@@ -784,10 +784,15 @@ app.get('/api/rooms/:code/search', searchLimiter, asyncRoute(async (req, res) =>
 }))
 
 app.get('/api/rooms/:code/autoplay/history-videos', (req, res) => {
-  const user = requireAuthUser(req)
+  requireAuthUser(req)
   res.json(rooms.listAutoplayHistoryVideos(
-    req.params.code, user.id, req.query.q ?? '', req.query.offset ?? 0,
+    req.params.code, controlCredentials(req), req.query.q ?? '', req.query.offset ?? 0,
   ))
+})
+
+app.get('/api/rooms/:code/management-history', (req, res) => {
+  requireAuthUser(req)
+  res.json(rooms.listManagementHistory(req.params.code, controlCredentials(req), req.query.before))
 })
 
 app.get('/api/rooms/:code/session', (req, res) => {

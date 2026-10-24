@@ -5,6 +5,7 @@ const { buildPlaybackSeries } = require('./roomStats')
 const { extractYouTubeVideoId } = require('./youtube')
 const { readRoomUserRecords, deleteRoomUserRecords } = require('./roomRecordCleanup')
 const { readRoomVideoRecords, deleteRoomVideoRecords } = require('./roomVideoCleanup')
+const { recordRoomManagement, settingsChanges } = require('./roomManagementLog')
 
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const PLAYBACK_MODES = new Set(['host_only', 'all_devices'])
@@ -16,6 +17,7 @@ const ROOM_HISTORY_PAGE_SIZE = 30
 const AUTOPLAY_MIN_HISTORY = 10
 const AUTOPLAY_DURATION_LIMIT_SECONDS = 86_400
 const AUTOPLAY_PREVIEW_SIZE = 20
+const AUTOPLAY_MODES = new Set(['random', 'shuffle'])
 const EARLY_SKIP_THRESHOLD_SECONDS = 10
 const ABANDONED_SONG_GRACE_MS = 60_000
 const ROOM_EVENT_TYPES = new Set([
@@ -211,6 +213,31 @@ function createRoomService(db, options = {}) {
     return identity.isHost || identity.isOwner || Boolean(identity.participant)
   }
 
+  function managementActor(room, credentials) {
+    const { isOwner, participant } = getSessionIdentity(room, credentials)
+    const userId = credentials?.userId || participant?.user_id || null
+    const user = userId ? db.prepare('SELECT custom_name, global_name, username FROM users WHERE id = ?').get(userId) : null
+    return { userId, name: participant?.nickname ?? (user?.custom_name || user?.global_name || user?.username || null),
+      role: isOwner ? 'owner' : participant?.is_manager ? 'manager' : 'host' }
+  }
+
+  function listManagementHistory(code, credentials, before) {
+    const room = getRoomRecord(code)
+    if (!hasOwnerAccess(room, credentials?.userId)) {
+      requireManager(room, credentials?.participantToken, credentials?.userId)
+    }
+    if (before !== undefined && (!/^[1-9]\d*$/.test(String(before)) || !Number.isSafeInteger(Number(before)))) {
+      throw new AppError(400, '관리 이력 조회 조건이 올바르지 않습니다.', 'INVALID_MANAGEMENT_CURSOR')
+    }
+    const rows = db.prepare(`SELECT * FROM room_management_entries WHERE room_id = ?
+      ${before === undefined ? '' : 'AND sequence < ?'} ORDER BY sequence DESC LIMIT 31`)
+      .all(room.id, ...(before === undefined ? [] : [Number(before)]))
+    const items = rows.slice(0, 30).map((row) => ({ id: String(row.sequence), actorName: row.actor_name,
+      actorRole: row.actor_role, targetName: row.target_name, action: row.action,
+      changes: JSON.parse(row.changes), createdAt: row.created_at }))
+    return { items, nextCursor: rows.length > 30 ? items.at(-1).id : null }
+  }
+
   function getPresenceIdentity(code, credentials = {}) {
     const room = getRoomRecord(code)
     const identity = getSessionIdentity(room, credentials)
@@ -286,10 +313,11 @@ function createRoomService(db, options = {}) {
       })
   }
 
-  function listAutoplayHistoryVideos(code, ownerUserId, query = '', offset = 0) {
+  function listAutoplayHistoryVideos(code, credentials, query = '', offset = 0) {
     const room = getRoomRecord(code)
-    if (!hasOwnerAccess(room, ownerUserId)) {
-      throw new AppError(403, '방 소유자만 이 설정을 변경할 수 있습니다.', 'OWNER_FORBIDDEN')
+    const identity = typeof credentials === 'string' ? { userId: credentials } : credentials
+    if (!hasOwnerAccess(room, identity?.userId)) {
+      requireManager(room, identity?.participantToken, identity?.userId)
     }
     if (typeof query !== 'string' || query.length > 100 ||
       !Number.isInteger(Number(offset)) || Number(offset) < 0 || Number(offset) > 100000) {
@@ -318,12 +346,79 @@ function createRoomService(db, options = {}) {
     }
   }
 
+  function shuffleVideos(videos, avoidFirstVideoId) {
+    const shuffled = [...videos]
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const other = crypto.randomInt(index + 1)
+      ;[shuffled[index], shuffled[other]] = [shuffled[other], shuffled[index]]
+    }
+    if (shuffled.length > 1 && shuffled[0] === avoidFirstVideoId) {
+      const other = crypto.randomInt(1, shuffled.length)
+      ;[shuffled[0], shuffled[other]] = [shuffled[other], shuffled[0]]
+    }
+    return shuffled
+  }
+
+  function consumeShuffleVideo(room, videoId) {
+    if (room.autoplay_mode !== 'shuffle' || !room.history_autoplay) return
+    const saved = db.prepare('SELECT autoplay_shuffle_state FROM rooms WHERE id = ?').get(room.id)
+    const state = JSON.parse(saved.autoplay_shuffle_state)
+    if (!state.played.includes(videoId)) {
+      state.played.push(videoId)
+      db.prepare('UPDATE rooms SET autoplay_shuffle_state = ? WHERE id = ?')
+        .run(JSON.stringify(state), room.id)
+    }
+  }
+
+  function getShuffleSuggestions(room, queuedVideos, avoidFirstVideoId) {
+    const candidates = new Map(getAutoplayCandidates(room).map((video) => [video.video_id, video]))
+    const saved = db.prepare('SELECT autoplay_shuffle_state FROM rooms WHERE id = ?').get(room.id)
+    let state = JSON.parse(saved.autoplay_shuffle_state)
+    const known = new Set(state.order)
+    // Keep consumed IDs through filter changes; new eligible videos join this cycle.
+    state.order.push(...shuffleVideos([...candidates.keys()].filter((id) => !known.has(id))))
+    const played = new Set(state.played)
+    let remaining = state.order.filter((id) => candidates.has(id) && !played.has(id))
+    const currentVideoId = room.current_song_id
+      ? db.prepare('SELECT video_id FROM songs WHERE id = ?').get(room.current_song_id)?.video_id
+      : null
+    if (!remaining.length && candidates.size) {
+      // Begin a new cycle only after every eligible video has actually started.
+      state = { order: shuffleVideos([...candidates.keys()], currentVideoId), played: [] }
+      remaining = state.order
+    }
+    if (avoidFirstVideoId) {
+      const available = remaining.filter((id) => !queuedVideos.has(id))
+      const reshuffled = shuffleVideos(available, avoidFirstVideoId)
+      let index = 0
+      state.order = state.order.map((id) => available.includes(id) ? reshuffled[index++] : id)
+      remaining = state.order.filter((id) => candidates.has(id) && !state.played.includes(id))
+    }
+    const available = remaining.filter((id) => !queuedVideos.has(id))
+    if (available.length > 1 && available[0] === currentVideoId) {
+      const first = state.order.indexOf(available[0])
+      const other = state.order.indexOf(available[1])
+      ;[state.order[first], state.order[other]] = [state.order[other], state.order[first]]
+      ;[available[0], available[1]] = [available[1], available[0]]
+    }
+    const serialized = JSON.stringify(state)
+    if (serialized !== saved.autoplay_shuffle_state) {
+      db.prepare('UPDATE rooms SET autoplay_shuffle_state = ? WHERE id = ?').run(serialized, room.id)
+    }
+    return available.slice(0, AUTOPLAY_PREVIEW_SIZE).map((id) => {
+      const video = candidates.get(id)
+      return { id: `shuffle:${room.id}:${id}`, videoId: id, title: video.title, artist: video.artist,
+        durationSeconds: video.duration_seconds, thumbnailUrl: video.thumbnail_url }
+    })
+  }
+
   function getAutoplaySuggestions(room, avoidFirstVideoId = null) {
     if (!room.history_autoplay || getAutoplayHistoryCount(room.id) < AUTOPLAY_MIN_HISTORY) return []
     // Keep the order in the database so starting a song only shifts the preview by one.
     const queuedVideos = new Set(db.prepare(
       "SELECT video_id FROM songs WHERE room_id = ? AND status = 'queued'",
     ).all(room.id).map(({ video_id }) => video_id))
+    if (room.autoplay_mode === 'shuffle') return getShuffleSuggestions(room, queuedVideos, avoidFirstVideoId)
     const pending = db.prepare(
       'SELECT * FROM room_autoplay_suggestions WHERE room_id = ? ORDER BY position',
     ).all(room.id)
@@ -589,6 +684,7 @@ function createRoomService(db, options = {}) {
       title: room.title,
       allowGuests: Boolean(room.allow_guests),
       historyAutoplay: Boolean(room.history_autoplay),
+      autoplayMode: room.autoplay_mode,
       autoplayHistoryCount: getAutoplayHistoryCount(room.id),
       autoplayPoolCount: getAutoplayCandidates(room).length,
       autoplayFilters: getAutoplayFilters(room),
@@ -1010,8 +1106,8 @@ function createRoomService(db, options = {}) {
       db.prepare(
         `INSERT INTO rooms (
           id, code, title, allow_guests, host_token_hash, owner_user_id,
-          playback_mode, playback_anchor_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          playback_mode, playback_anchor_at, created_at, autoplay_mode
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'shuffle')`,
       ).run(
         id,
         code,
@@ -1314,6 +1410,7 @@ function createRoomService(db, options = {}) {
         createdAt,
       )
       if (status === 'current') {
+        consumeShuffleVideo(room, song.videoId)
         db.prepare(
           `UPDATE rooms
            SET current_song_id = ?, playback_paused = 0, playback_blocked = 0,
@@ -1335,7 +1432,7 @@ function createRoomService(db, options = {}) {
   function advanceRoom(room, code, changedAt = now()) {
     let next = db
       .prepare(
-        `SELECT id FROM songs
+        `SELECT id, video_id FROM songs
          WHERE room_id = ? AND status = 'queued'
          ORDER BY position ASC, created_at ASC LIMIT 1`,
       )
@@ -1349,6 +1446,7 @@ function createRoomService(db, options = {}) {
     if (next) {
       db.prepare("UPDATE songs SET status = 'current', started_at = ? WHERE id = ?")
         .run(changedAt, next.id)
+      consumeShuffleVideo(room, next.video_id)
     } else if (suggestion) {
       const id = crypto.randomUUID()
       db.prepare(
@@ -1360,6 +1458,7 @@ function createRoomService(db, options = {}) {
         suggestion.durationSeconds, suggestion.thumbnailUrl,
         ensureAutoplayParticipant(room, changedAt), changedAt, changedAt)
       db.prepare('DELETE FROM room_autoplay_suggestions WHERE id = ?').run(suggestion.id)
+      consumeShuffleVideo(room, suggestion.videoId)
       next = { id }
     }
     db.prepare(
@@ -1774,19 +1873,35 @@ function createRoomService(db, options = {}) {
     const hasTitle = settings.title !== undefined
     const hasAllowGuests = settings.allowGuests !== undefined
     const hasHistoryAutoplay = settings.historyAutoplay !== undefined
+    const hasAutoplayMode = settings.autoplayMode !== undefined
     const hasAutoplayFilters = settings.autoplayFilters !== undefined
-    if (!hasVolume && !hasTitle && !hasAllowGuests && !hasHistoryAutoplay && !hasAutoplayFilters) {
+    if (!hasVolume && !hasTitle && !hasAllowGuests && !hasHistoryAutoplay && !hasAutoplayMode && !hasAutoplayFilters) {
       throw new AppError(400, '변경할 설정이 없습니다.', 'EMPTY_SETTINGS')
     }
 
     return transaction(db, () => {
       const room = getRoomRecord(code)
-      if (hasTitle || hasAllowGuests || hasHistoryAutoplay || hasAutoplayFilters) {
+      if (hasTitle || hasAllowGuests) {
         if (!hasOwnerAccess(room, credentials?.userId)) {
           throw new AppError(403, '방 소유자만 이 설정을 변경할 수 있습니다.', 'OWNER_FORBIDDEN')
         }
+      } else if (hasHistoryAutoplay || hasAutoplayMode || hasAutoplayFilters) {
+        if (!hasOwnerAccess(room, credentials?.userId)) {
+          requireManager(room, credentials?.participantToken, credentials?.userId)
+        }
       } else {
         requireController(room, credentials)
+      }
+
+      if (hasAutoplayMode) {
+        if (!AUTOPLAY_MODES.has(settings.autoplayMode)) {
+          throw new AppError(400, '자동 재생 방식이 올바르지 않습니다.', 'INVALID_AUTOPLAY_MODE')
+        }
+        if (settings.autoplayMode !== room.autoplay_mode) {
+          db.prepare(`UPDATE rooms SET autoplay_mode = ?, autoplay_shuffle_state = '{"order":[],"played":[]}' WHERE id = ?`)
+            .run(settings.autoplayMode, room.id)
+          db.prepare('DELETE FROM room_autoplay_suggestions WHERE room_id = ?').run(room.id)
+        }
       }
 
       if (hasTitle) {
@@ -1865,7 +1980,9 @@ function createRoomService(db, options = {}) {
       }
 
       const updatedRoom = getRoomRecord(code)
-      if ((hasHistoryAutoplay || hasAutoplayFilters) && updatedRoom.history_autoplay && !updatedRoom.current_song_id) {
+      const changes = settingsChanges(db, room, updatedRoom)
+      if (changes.length) recordRoomManagement(db, room, managementActor(room, credentials), 'settings_changed', changes, now())
+      if ((hasHistoryAutoplay || hasAutoplayFilters || hasAutoplayMode) && updatedRoom.history_autoplay && !updatedRoom.current_song_id) {
         return advanceRoom(updatedRoom, code)
       }
       return getPublicRoom(code)
@@ -1882,6 +1999,7 @@ function createRoomService(db, options = {}) {
       const firstVideoId = getAutoplaySuggestions(room)[0]?.videoId ?? null
       db.prepare('DELETE FROM room_autoplay_suggestions WHERE room_id = ?').run(room.id)
       getAutoplaySuggestions(room, firstVideoId)
+      recordRoomManagement(db, room, managementActor(room, credentials), 'autoplay_refreshed', [], now())
       return getPublicRoom(code)
     })
   }
@@ -1904,7 +2022,7 @@ function createRoomService(db, options = {}) {
       requireController(room, normalizedCredentials)
       const target = db
         .prepare(
-          'SELECT id, user_id, is_manager FROM participants WHERE id = ? AND room_id = ? AND left_at IS NULL',
+          'SELECT id, user_id, nickname, is_manager FROM participants WHERE id = ? AND room_id = ? AND left_at IS NULL',
         )
         .get(String(targetParticipantId ?? ''), room.id)
       if (!target) {
@@ -1924,9 +2042,13 @@ function createRoomService(db, options = {}) {
         return getPublicRoom(code)
       }
 
+      const actor = managementActor(room, normalizedCredentials)
       db.prepare(
         'UPDATE participants SET is_manager = ? WHERE id = ? AND room_id = ?',
       ).run(isManager ? 1 : 0, target.id, room.id)
+      recordRoomManagement(db, room, actor, 'manager_changed',
+        [{ field: 'isManager', before: Boolean(target.is_manager), after: isManager }], now(),
+        { userId: target.user_id, name: target.nickname })
       return getPublicRoom(code)
     })
   }
@@ -2000,6 +2122,7 @@ function createRoomService(db, options = {}) {
     getRoomHistory,
     getSearchHistory,
     listAutoplayHistoryVideos,
+    listManagementHistory,
     getSongVote,
     setSongVote,
     getParticipantStatus,
