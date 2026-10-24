@@ -36,7 +36,7 @@ import { InviteRoomButton } from '../components/InviteRoomButton'
 import { RoomJoinPreview } from '../components/RoomJoinPreview'
 import { RoomSettingsButton } from '../components/RoomSettingsButton'
 import { RoomSettingsPanel } from '../components/RoomSettingsPanel'
-import { createRoomSettingsDraft, type RoomSettingsDraft } from '../roomSettingsDraft'
+import { createRoomSettingsDraft, type RoomSettingsDraft, type RoomSettingsUpdate } from '../roomSettingsDraft'
 import { PlaylistTracksPanel } from '../../library/PlaylistTracksPanel'
 import type { Playlist } from '../../library/api'
 import { canControlSong, canReportPlaybackFailure, getRoomPermissions } from '../roomPermissions'
@@ -219,6 +219,9 @@ export function RoomPage() {
     participantToken,
     isOwner,
   })
+  useEffect(() => {
+    if (settingsOpen && !isOwner && !isManager) setSettingsOpen(false)
+  }, [settingsOpen, isOwner, isManager])
   const {
     message,
     error,
@@ -334,9 +337,9 @@ export function RoomPage() {
     serverTimeOffsetMs,
     pending: room.playbackPending,
   }
-  const saveRoomSettings = async (settings: Pick<NonNullable<typeof room>,
-    'title' | 'allowGuests' | 'historyAutoplay' | 'autoplayFilters'>) => {
-    setRoom(await roomApi.updateRoomSettings(code, {}, settings))
+  const saveRoomSettings = async (settings: RoomSettingsUpdate) => {
+    if (!controlCredentials) return
+    setRoom(await roomApi.updateRoomSettings(code, controlCredentials, settings))
     setSettingsDraft(null)
   }
   const deleteRoom = async (confirmationName: string) => {
@@ -401,7 +404,7 @@ export function RoomPage() {
           )}
           <InviteRoomButton code={code} joinUrl={joinUrl} allowGuests={room.allowGuests}
             triggerClassName="hidden sm:inline-flex" />
-          {isOwner && (
+          {(isOwner || isManager) && (
             <RoomSettingsButton onClick={openSettings}
               triggerClassName="hidden sm:inline-flex" />
           )}
@@ -551,7 +554,7 @@ export function RoomPage() {
                 onLibraryChange={() => setLibraryRevision((revision) => revision + 1)}
                 libraryRevision={libraryRevision} message={message} roomError={error || roomError} />
             </Suspense>}
-            {settingsOpen && isOwner && <RoomSettingsPanel room={room}
+            {settingsOpen && (isOwner || isManager) && <RoomSettingsPanel room={room} isOwner={isOwner}
               draft={settingsDraft ?? createRoomSettingsDraft(room)} onDraftChange={setSettingsDraft}
               onSave={saveRoomSettings} onDelete={deleteRoom} onClose={closeSettings} />}
           </div>
@@ -641,7 +644,7 @@ export function RoomPage() {
                         aria-pressed={statsOpen} onClick={toggleStats}>
                         <History size={19} aria-hidden="true" />
                       </button>}
-                      {isOwner && <RoomSettingsButton onClick={openSettings}
+                      {(isOwner || isManager) && <RoomSettingsButton onClick={openSettings}
                         triggerClassName="text-white" />}
                       <InviteRoomButton code={code} joinUrl={joinUrl} allowGuests={room.allowGuests}
                         triggerClassName="text-white" />

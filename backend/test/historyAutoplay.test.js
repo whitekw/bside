@@ -21,6 +21,7 @@ test('history autoplay needs ten manual plays, yields to requests and creates se
              ('requester', 'discord-requester', 'Requester', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     const requester = rooms.joinRoom(created.code, { nickname: 'Requester', userId: 'requester' })
     const credentials = { userId: 'owner' }
 
@@ -33,7 +34,7 @@ test('history autoplay needs ten manual plays, yields to requests and creates se
       { code: 'AUTOPLAY_HISTORY_REQUIRED' })
     assert.throws(() => rooms.updateRoomSettings(created.code,
       { participantToken: requester.participantToken }, { historyAutoplay: true }),
-    { code: 'OWNER_FORBIDDEN' })
+    { code: 'PARTICIPANT_REQUIRED' })
 
     rooms.addSong(created.code, requester.participantToken, song(9, 601), 'requester')
     rooms.advance(created.code, { hostToken: created.hostToken }, { reason: 'ended', songId: rooms.getPublicRoom(created.code).currentSong.id })
@@ -116,6 +117,7 @@ test('autoplay previews at most twenty distinct videos and drops a newly queued 
       VALUES ('owner', 'discord-owner', 'Owner', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     for (let index = 0; index < 22; index += 1) {
       rooms.addSong(created.code, created.participantToken, song(index), 'owner')
       rooms.advance(created.code, { hostToken: created.hostToken }, { reason: 'ended', songId: rooms.getPublicRoom(created.code).currentSong.id })
@@ -143,6 +145,7 @@ test('room owner filters autoplay by title and video without affecting manual re
       VALUES ('owner', 'discord-owner', 'Owner', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     const excludedId = 'abc123DEF45'
     for (let index = 0; index < 10; index += 1) {
       const track = index === 2 ? { ...song(index), videoId: excludedId } : song(index)
@@ -172,7 +175,7 @@ test('room owner filters autoplay by title and video without affecting manual re
     assert.deepEqual(unchangedFilters.autoplaySuggestions, filtered.autoplaySuggestions)
     assert.throws(() => rooms.updateRoomSettings(created.code, {}, { autoplayFilters: {
       excludedWords: [], excludedVideoIds: [],
-    } }), { code: 'OWNER_FORBIDDEN' })
+    } }), { code: 'PARTICIPANT_REQUIRED' })
     assert.throws(() => rooms.updateRoomSettings(created.code, owner, { autoplayFilters: {
       excludedWords: [], excludedVideoIds: ['not-a-valid-video-id'],
     } }), { code: 'INVALID_AUTOPLAY_FILTERS' })
@@ -207,6 +210,7 @@ test('autoplay filter search lists distinct eligible history videos in recent-pl
       VALUES ('owner', 'discord-owner', 'Owner', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     const repeatedId = 'abc123DEF45'
     for (let index = 0; index < 32; index += 1) {
       rooms.addSong(created.code, created.participantToken,
@@ -234,7 +238,7 @@ test('autoplay filter search lists distinct eligible history videos in recent-pl
     assert.deepEqual(rooms.listAutoplayHistoryVideos(created.code, 'owner', 'special').items
       .map(({ videoId }) => videoId), [repeatedId])
     assert.deepEqual(rooms.listAutoplayHistoryVideos(created.code, 'owner', 'Song 99').items, [])
-    assert.throws(() => rooms.listAutoplayHistoryVideos(created.code, null), { code: 'OWNER_FORBIDDEN' })
+    assert.throws(() => rooms.listAutoplayHistoryVideos(created.code, null), { code: 'PARTICIPANT_REQUIRED' })
     assert.throws(() => rooms.listAutoplayHistoryVideos(created.code, 'owner', '', -1),
       { code: 'INVALID_AUTOPLAY_SEARCH' })
   } finally {
@@ -249,6 +253,7 @@ test('autoplay duration range controls the pool, history search, and next playba
       VALUES ('owner', 'discord-owner', 'Owner', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     const owner = { userId: 'owner' }
     for (let index = 0; index < 10; index += 1) {
       const duration = index < 3 ? 60 : index < 6 ? 180 : index < 8 ? 300 : 601
@@ -291,6 +296,7 @@ test('controllers can redraw autoplay suggestions without changing the current s
       VALUES ('owner', 'discord-owner', 'Owner', 1, 1, 1)`).run()
     const rooms = createRoomService(db)
     const created = rooms.createRoom({ ownerUserId: 'owner', nickname: 'Owner' })
+    rooms.updateRoomSettings(created.code, { userId: 'owner' }, { autoplayMode: 'random' })
     const credentials = { userId: 'owner' }
     assert.throws(() => rooms.refreshAutoplaySuggestions(created.code, credentials),
       { code: 'HISTORY_AUTOPLAY_DISABLED' })

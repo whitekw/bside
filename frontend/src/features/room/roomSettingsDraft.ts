@@ -1,6 +1,7 @@
 import type { RoomState } from './types'
 
-export type RoomSettings = Pick<RoomState, 'title' | 'allowGuests' | 'historyAutoplay' | 'autoplayFilters'>
+export type RoomSettings = Pick<RoomState, 'title' | 'allowGuests' | 'historyAutoplay' | 'autoplayMode' | 'autoplayFilters'>
+export type RoomSettingsUpdate = Omit<RoomSettings, 'title' | 'allowGuests'> & Partial<Pick<RoomSettings, 'title' | 'allowGuests'>>
 export type RoomSettingsDraft = Omit<RoomSettings, 'autoplayFilters'> & {
   excludedWords: string[]
   excludedVideoIds: string[]
@@ -15,6 +16,7 @@ export type DurationField = 'minMinutes' | 'minSeconds' | 'maxMinutes' | 'maxSec
 export function createRoomSettingsDraft(room: RoomSettings): RoomSettingsDraft {
   return {
     title: room.title, allowGuests: room.allowGuests, historyAutoplay: room.historyAutoplay,
+    autoplayMode: room.autoplayMode,
     excludedWords: [...room.autoplayFilters.excludedWords],
     excludedVideoIds: [...room.autoplayFilters.excludedVideoIds], wordInput: '',
     minMinutes: String(Math.floor(room.autoplayFilters.minDurationSeconds / 60)),

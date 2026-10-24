@@ -51,6 +51,8 @@ function createAccountService(db) {
       db.prepare(`UPDATE participants SET nickname = '탈퇴한 사용자', avatar_url = NULL, is_manager = 0,
         token_hash = lower(hex(randomblob(32))), left_at = ?, profile_source = 'custom' WHERE user_id = ?`).run(Date.now(), userId)
       db.prepare('DELETE FROM rooms WHERE owner_user_id = ?').run(userId)
+      db.prepare('UPDATE room_management_entries SET actor_name = NULL WHERE actor_user_id = ?').run(userId)
+      db.prepare('UPDATE room_management_entries SET target_name = NULL WHERE target_user_id = ?').run(userId)
       db.prepare('DELETE FROM users WHERE id = ?').run(userId)
       return { owned, participants, memberships, codes: codes.filter(c => !owned.includes(c)), sessions }
     })

@@ -2,7 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { DatabaseSync } = require('node:sqlite')
 
-const SCHEMA_VERSION = 16
+const SCHEMA_VERSION = 18
 
 function createDatabase(databasePath = ':memory:') {
   if (databasePath !== ':memory:') {
@@ -17,7 +17,7 @@ function createDatabase(databasePath = ':memory:') {
   const hasExistingSchema = Boolean(db.prepare(
     "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
   ).get())
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, SCHEMA_VERSION].includes(version) && (version !== 0 || hasExistingSchema)) {
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, SCHEMA_VERSION].includes(version) && (version !== 0 || hasExistingSchema)) {
     db.close()
     throw new Error('기존 DB 스키마는 지원하지 않습니다. 데이터베이스 파일을 초기화한 뒤 다시 실행해주세요.')
   }
@@ -76,6 +76,8 @@ function createDatabase(databasePath = ':memory:') {
       playback_pending INTEGER NOT NULL DEFAULT 0 CHECK(playback_pending IN (0, 1)),
       playback_revision INTEGER NOT NULL DEFAULT 0,
       history_autoplay INTEGER NOT NULL DEFAULT 0 CHECK(history_autoplay IN (0, 1)),
+      autoplay_mode TEXT NOT NULL DEFAULT 'random' CHECK(autoplay_mode IN ('random', 'shuffle')),
+      autoplay_shuffle_state TEXT NOT NULL DEFAULT '{"order":[],"played":[]}',
       autoplay_excluded_words TEXT NOT NULL DEFAULT '[]',
       autoplay_excluded_video_ids TEXT NOT NULL DEFAULT '[]',
       autoplay_min_duration_seconds INTEGER NOT NULL DEFAULT 0 CHECK(autoplay_min_duration_seconds >= 0),
@@ -190,6 +192,22 @@ function createDatabase(databasePath = ':memory:') {
       created_at INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS room_management_entries (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+      actor_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      actor_name TEXT,
+      actor_role TEXT NOT NULL CHECK(actor_role IN ('owner', 'manager', 'host')),
+      target_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      target_name TEXT,
+      action TEXT NOT NULL CHECK(action IN ('settings_changed', 'autoplay_refreshed', 'manager_changed')),
+      changes TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS room_management_by_room_sequence ON room_management_entries(room_id, sequence DESC);
+    CREATE INDEX IF NOT EXISTS room_management_by_actor ON room_management_entries(actor_user_id);
+    CREATE INDEX IF NOT EXISTS room_management_by_target ON room_management_entries(target_user_id);
+
     CREATE TABLE IF NOT EXISTS admin_audit_entries (
       id TEXT PRIMARY KEY,
       admin_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -284,6 +302,12 @@ function createDatabase(databasePath = ':memory:') {
   }
   if (!roomColumns.has('history_autoplay')) {
     db.exec('ALTER TABLE rooms ADD COLUMN history_autoplay INTEGER NOT NULL DEFAULT 0 CHECK(history_autoplay IN (0, 1))')
+  }
+  if (!roomColumns.has('autoplay_mode')) {
+    db.exec("ALTER TABLE rooms ADD COLUMN autoplay_mode TEXT NOT NULL DEFAULT 'random' CHECK(autoplay_mode IN ('random', 'shuffle'))")
+  }
+  if (!roomColumns.has('autoplay_shuffle_state')) {
+    db.exec(`ALTER TABLE rooms ADD COLUMN autoplay_shuffle_state TEXT NOT NULL DEFAULT '{"order":[],"played":[]}'`)
   }
   if (!roomColumns.has('autoplay_excluded_words')) {
     db.exec("ALTER TABLE rooms ADD COLUMN autoplay_excluded_words TEXT NOT NULL DEFAULT '[]'")

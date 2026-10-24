@@ -8,6 +8,7 @@ import type {
   RoomHistoryPage,
   VideoSearchResult,
   AutoplayHistoryVideoPage,
+  RoomManagementPage,
 } from './types'
 import { request } from '../../shared/http'
 
@@ -33,6 +34,11 @@ function controlHeaders(credentials: ControlCredentials) {
 }
 
 export const roomApi = {
+  getManagementHistory(code: string, before?: string, signal?: AbortSignal) {
+    const params = new URLSearchParams()
+    if (before) params.set('before', before)
+    return request<RoomManagementPage>(`/api/rooms/${encodeURIComponent(code)}/management-history${params.size ? `?${params}` : ''}`, { signal })
+  },
   getAutoplayHistoryVideos(code: string, query = '', offset = 0) {
     const params = new URLSearchParams({ q: query, offset: String(offset) })
     return request<AutoplayHistoryVideoPage>(
@@ -303,6 +309,7 @@ export const roomApi = {
       title?: string
       allowGuests?: boolean
       historyAutoplay?: boolean
+      autoplayMode?: RoomState['autoplayMode']
       autoplayFilters?: RoomState['autoplayFilters']
     },
   ) {
