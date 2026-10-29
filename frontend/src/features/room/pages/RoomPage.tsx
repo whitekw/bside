@@ -101,6 +101,7 @@ export function RoomPage() {
   const [queuePeek, setQueuePeek] = useState(false)
   const selectedPlaylist = panel?.type === 'playlist' ? panel : null
   const [libraryRevision, setLibraryRevision] = useState(0)
+  const [playlistMetadata, setPlaylistMetadata] = useState<Record<string, Pick<Playlist, 'id' | 'name' | 'updatedAt'>>>({})
   const [songControlTick, setSongControlTick] = useState(0)
   const [localPlaybackPosition, setLocalPlaybackPosition] = useState<{
     songId: string
@@ -113,7 +114,10 @@ export function RoomPage() {
   const wasAuthenticated = useRef(false)
   const joinUrl = useMemo(() => `${window.location.origin}/room/${code}`, [code])
   const queuedVideoIds = useMemo(() => new Set(room?.queue.map(({ videoId }) => videoId) ?? []), [room?.queue])
-  const activePlaylist = selectedPlaylist && user?.id === selectedPlaylist.userId ? selectedPlaylist.playlist : null
+  const renamedPlaylist = selectedPlaylist ? playlistMetadata[`${selectedPlaylist.userId}:${selectedPlaylist.playlist.id}`] : undefined
+  const activePlaylist = selectedPlaylist && user?.id === selectedPlaylist.userId
+    ? { ...selectedPlaylist.playlist, ...(renamedPlaylist && renamedPlaylist.updatedAt >= selectedPlaylist.playlist.updatedAt ? renamedPlaylist : {}) }
+    : null
   const closePlaylist = closePanel
   const closeStats = closePanel
   const closeSettings = closePanel
@@ -514,15 +518,20 @@ export function RoomPage() {
                 onAddSong={participant ? addSong : undefined}
                 queuedVideoIds={queuedVideoIds}
                 currentVideoId={room.currentSong?.videoId ?? null}
-                onLibraryChange={() => setLibraryRevision((revision) => revision + 1)}
+                onLibraryChange={(updatedPlaylist) => {
+                  setLibraryRevision((revision) => revision + 1)
+                  if (updatedPlaylist && selectedPlaylist) {
+                    const key = `${selectedPlaylist.userId}:${updatedPlaylist.id}`
+                    setPlaylistMetadata((current) => current[key]?.updatedAt > updatedPlaylist.updatedAt
+                      ? current : { ...current, [key]: updatedPlaylist })
+                  }
+                }}
                 onPlaylistRenamed={(name, updatedAt) => {
                   if (selectedPlaylist) replacePanel({ ...selectedPlaylist,
                     playlist: { ...selectedPlaylist.playlist, name, updatedAt } })
-                  setLibraryRevision((revision) => revision + 1)
                 }}
                 onPlaylistDeleted={() => {
                   replacePanel(null)
-                  setLibraryRevision((revision) => revision + 1)
                 }}
                 message={message}
                 roomError={error || roomError}

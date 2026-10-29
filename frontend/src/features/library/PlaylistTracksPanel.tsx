@@ -15,7 +15,7 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
   onAddSong?: (videoId: string) => Promise<void>
   queuedVideoIds: ReadonlySet<string>
   currentVideoId: string | null
-  onLibraryChange: () => void
+  onLibraryChange: (updatedPlaylist?: Pick<Playlist, 'id' | 'name' | 'updatedAt'>) => void
   onPlaylistRenamed: (name: string, updatedAt: number) => void
   onPlaylistDeleted: () => void
   message: string
@@ -83,29 +83,37 @@ export function PlaylistTracksPanel({ playlist, revision, onClose, onAddSong, qu
   async function renamePlaylist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (savingPlaylist || !nameDraft.trim()) return
+    const requestPanel = panelRef.current
+    const isCurrentPanel = () => Boolean(requestPanel?.isConnected && panelRef.current === requestPanel)
     setSavingPlaylist(true)
     setMutationError('')
     try {
       const updated = await libraryApi.rename(playlist.id, nameDraft)
+      onLibraryChange(updated)
+      if (!isCurrentPanel()) return
       onPlaylistRenamed(updated.name, updated.updatedAt)
       setNameDraft(updated.name)
       setEditingName(false)
     } catch (cause) {
-      setMutationError(getErrorMessage(cause, t))
+      if (isCurrentPanel()) setMutationError(getErrorMessage(cause, t))
     } finally {
-      if (panelRef.current) setSavingPlaylist(false)
+      if (isCurrentPanel()) setSavingPlaylist(false)
     }
   }
 
   async function deletePlaylist() {
     if (savingPlaylist) return
+    const requestPanel = panelRef.current
+    const isCurrentPanel = () => Boolean(requestPanel?.isConnected && panelRef.current === requestPanel)
     setSavingPlaylist(true)
     setMutationError('')
     try {
       await libraryApi.remove(playlist.id)
+      onLibraryChange()
+      if (!isCurrentPanel()) return
       onPlaylistDeleted()
     } catch (cause) {
-      if (panelRef.current) {
+      if (isCurrentPanel()) {
         setMutationError(getErrorMessage(cause, t))
         setSavingPlaylist(false)
       }
