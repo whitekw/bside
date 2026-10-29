@@ -21,7 +21,7 @@ function periodLabel(key: string, period: Period, locale: string, timeZone: stri
   }).format(date)
 }
 
-export default function RoomStatsPanel({ code, participantToken, revision, historyRevision, participants, currentParticipantId, onClose, onAddSong, queuedVideoIds, currentVideoId, onLibraryChange, libraryRevision, message, roomError }: {
+export default function RoomStatsPanel({ code, participantToken, revision, historyRevision, participants, currentParticipantId, onClose, onAddSong, queuedVideoIds, currentVideoId, onLibraryChange, libraryRevision, message, roomError, tab, onTabChange }: {
   code: string
   participantToken: string
   revision: string
@@ -36,11 +36,12 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
   libraryRevision: number
   message: string
   roomError: string
+  tab: 'stats' | 'history'
+  onTabChange: (tab: 'stats' | 'history') => void
 }) {
   const { locale, t } = useI18n()
   const [stats, setStats] = useState<RoomStats | null>(null)
   const [period, setPeriod] = useState<Period>('daily')
-  const [tab, setTab] = useState<'stats' | 'history'>('stats')
   const [participantPeriod, setParticipantPeriod] = useState<Period>('daily')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -111,7 +112,7 @@ export default function RoomStatsPanel({ code, participantToken, revision, histo
 
     <div className="flex shrink-0 gap-1 border-b border-line px-4 sm:px-6" role="group" aria-label={t('stats.title')}>
       {(['stats', 'history'] as const).map((option) => <button key={option} type="button"
-        aria-pressed={tab === option} onClick={() => setTab(option)}
+        aria-pressed={tab === option} onClick={() => onTabChange(option)}
         className={`border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent-soft ${tab === option
           ? 'border-accent-soft text-ink' : 'border-transparent text-muted hover:text-ink'}`}>
         {t(option === 'stats' ? 'stats.tab' : 'history.title')}

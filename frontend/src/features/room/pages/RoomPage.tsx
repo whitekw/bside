@@ -9,9 +9,11 @@ import {
   type FormEvent,
 } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { History, Menu, PanelRightOpen, WifiOff } from 'lucide-react'
+import { History, Menu, PanelRightOpen, WifiOff, X } from 'lucide-react'
 import { roomApi } from '../api'
 import { Brand } from '../../../shared/ui/Brand'
+import { DesktopUpdateButton } from '../../../shared/ui/DesktopUpdateButton'
+import { RoomHeader } from '../components/RoomHeader'
 import { AccountMenu } from '../../auth/components/AccountMenu'
 import { useAuth } from '../../auth/context'
 import { YouTubePlayer } from '../playback/YouTubePlayer'
@@ -44,6 +46,7 @@ import { useRoomSession } from '../hooks/useRoomSession'
 import { clearStoredRoomCredentials, normalizeRoomCode } from '../roomCredentials'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useSongVote } from '../hooks/useSongVote'
+import { useRoomPanelNavigation } from '../hooks/useRoomPanelNavigation'
 
 const RoomStatsPanel = lazy(() => import('../components/RoomStatsPanel'))
 
@@ -89,14 +92,16 @@ export function RoomPage() {
   } = useRoomState(code, hostToken, participantToken, revokeHost, onMembershipLeft, user?.id ?? '', onDisconnected, participant?.id)
   const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
-  const [requestSongOpen, setRequestSongOpen] = useState(false)
-  const [statsOpen, setStatsOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const { panel, openPanel, closePanel, replacePanel } = useRoomPanelNavigation()
+  const requestSongOpen = panel?.type === 'search'
+  const statsOpen = panel?.type === 'stats'
+  const settingsOpen = panel?.type === 'settings'
   const [settingsDraft, setSettingsDraft] = useState<RoomSettingsDraft | null>(null)
   const [queueOpen, setQueueOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
   const [queuePeek, setQueuePeek] = useState(false)
-  const [selectedPlaylist, setSelectedPlaylist] = useState<{ userId: string; playlist: Playlist } | null>(null)
+  const selectedPlaylist = panel?.type === 'playlist' ? panel : null
   const [libraryRevision, setLibraryRevision] = useState(0)
+  const [playlistMetadata, setPlaylistMetadata] = useState<Record<string, Pick<Playlist, 'id' | 'name' | 'updatedAt'>>>({})
   const [songControlTick, setSongControlTick] = useState(0)
   const [localPlaybackPosition, setLocalPlaybackPosition] = useState<{
     songId: string
@@ -109,46 +114,38 @@ export function RoomPage() {
   const wasAuthenticated = useRef(false)
   const joinUrl = useMemo(() => `${window.location.origin}/room/${code}`, [code])
   const queuedVideoIds = useMemo(() => new Set(room?.queue.map(({ videoId }) => videoId) ?? []), [room?.queue])
-  const activePlaylist = selectedPlaylist && user?.id === selectedPlaylist.userId ? selectedPlaylist.playlist : null
-  const closePlaylist = useCallback(() => setSelectedPlaylist(null), [])
-  const closeStats = useCallback(() => setStatsOpen(false), [])
-  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+  const renamedPlaylist = selectedPlaylist ? playlistMetadata[`${selectedPlaylist.userId}:${selectedPlaylist.playlist.id}`] : undefined
+  const activePlaylist = selectedPlaylist && user?.id === selectedPlaylist.userId
+    ? { ...selectedPlaylist.playlist, ...(renamedPlaylist && renamedPlaylist.updatedAt >= selectedPlaylist.playlist.updatedAt ? renamedPlaylist : {}) }
+    : null
+  const closePlaylist = closePanel
+  const closeStats = closePanel
+  const closeSettings = closePanel
   function openSongRequest() {
-    setSelectedPlaylist(null)
-    setStatsOpen(false)
-    setSettingsOpen(false)
     if (window.matchMedia('(max-width: 1023px)').matches) {
       setQueueOpen(false)
       setQueuePeek(false)
     }
-    setRequestSongOpen(true)
+    openPanel({ type: 'search' })
   }
   function openPlaylist(playlist: Playlist) {
     if (!user) return
-    setRequestSongOpen(false)
-    setStatsOpen(false)
-    setSettingsOpen(false)
-    setSelectedPlaylist({ userId: user.id, playlist })
+    openPanel({ type: 'playlist', userId: user.id, playlist })
   }
   function toggleStats() {
-    setRequestSongOpen(false)
-    setSelectedPlaylist(null)
-    setSettingsOpen(false)
     if (window.matchMedia('(max-width: 1023px)').matches) {
       setQueueOpen(false)
       setQueuePeek(false)
     }
-    setStatsOpen((current) => !current)
+    if (statsOpen) closePanel()
+    else openPanel({ type: 'stats' })
   }
   function openSettings() {
-    setRequestSongOpen(false)
-    setSelectedPlaylist(null)
-    setStatsOpen(false)
     if (window.matchMedia('(max-width: 1023px)').matches) {
       setQueueOpen(false)
       setQueuePeek(false)
     }
-    setSettingsOpen(true)
+    openPanel({ type: 'settings' })
   }
   useEffect(() => {
     if (!settingsOpen) return
@@ -220,8 +217,8 @@ export function RoomPage() {
     isOwner,
   })
   useEffect(() => {
-    if (settingsOpen && !isOwner && !isManager) setSettingsOpen(false)
-  }, [settingsOpen, isOwner, isManager])
+    if (settingsOpen && !participantLoading && !loading && !isOwner && !isManager) replacePanel(null)
+  }, [settingsOpen, isOwner, isManager, participantLoading, loading, replacePanel])
   const {
     message,
     error,
@@ -350,15 +347,7 @@ export function RoomPage() {
 
   return (
     <main className="listening-room flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas">
-      <header data-desktop-titlebar className="relative z-[60] flex w-full shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-line px-4 py-3 md:py-4">
-        <div className="flex min-w-0 items-center gap-5">
-          <Brand className="gap-2 text-base max-[380px]:[&>span]:hidden md:gap-2.5 md:text-lg" />
-          <div className="flex min-w-0 items-center gap-2.5 border-l border-line pl-3 text-sm text-muted sm:pl-5">
-            <h1 className="max-w-[min(36vw,380px)] truncate text-sm font-medium text-ink" title={room.title}>{room.title}</h1>
-            <span className="hidden shrink-0 text-xs tabular-nums sm:inline">{code}</span>
-          </div>
-        </div>
-        <div data-desktop-no-drag className="ml-auto flex shrink-0 items-center gap-2">
+      <RoomHeader title={room.title}>
           {!connected && (
             <span
               role="status"
@@ -403,12 +392,12 @@ export function RoomPage() {
             />
           )}
           <InviteRoomButton code={code} joinUrl={joinUrl} allowGuests={room.allowGuests}
-            triggerClassName="hidden sm:inline-flex" />
+            triggerClassName="hidden lg:inline-flex" />
           {(isOwner || isManager) && (
             <RoomSettingsButton onClick={openSettings}
-              triggerClassName="hidden sm:inline-flex" />
+              triggerClassName="hidden lg:inline-flex" />
           )}
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <AccountMenu
               compact
               logoutConfirmMessage={isHost && room.playbackMode === 'host_only'
@@ -416,14 +405,14 @@ export function RoomPage() {
                 : undefined}
             />
           </div>
+          <DesktopUpdateButton />
           <button type="button" className={cn(chromeIconButtonStyles, 'text-white lg:hidden')}
-            aria-label={t('room.openMenu')} title={t('room.openMenu')}
+            aria-label={t(queueOpen ? 'queue.hide' : 'room.openMenu')} title={t(queueOpen ? 'queue.hide' : 'room.openMenu')}
             aria-controls="room-queue-panel" aria-expanded={queueOpen}
-            onClick={() => { setQueueOpen(true); setQueuePeek(false) }}>
-            <Menu size={22} aria-hidden="true" />
+            onClick={() => { setQueueOpen((open) => !open); setQueuePeek(false) }}>
+            {queueOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
-        </div>
-      </header>
+      </RoomHeader>
 
       <section className={cn(
         'grid min-h-0 w-full flex-1 auto-rows-max grid-cols-1 gap-3 overflow-y-auto overscroll-contain p-4 sm:auto-rows-auto sm:gap-0 sm:overflow-hidden sm:p-0',
@@ -512,7 +501,7 @@ export function RoomPage() {
                 code={code}
                 participantToken={participantToken}
                 open={requestSongOpen}
-                onClose={() => setRequestSongOpen(false)}
+                onClose={closePanel}
                 onAddSong={addSong}
                 queuedVideoIds={queuedVideoIds}
                 currentVideoId={room.currentSong?.videoId ?? null}
@@ -529,16 +518,20 @@ export function RoomPage() {
                 onAddSong={participant ? addSong : undefined}
                 queuedVideoIds={queuedVideoIds}
                 currentVideoId={room.currentSong?.videoId ?? null}
-                onLibraryChange={() => setLibraryRevision((revision) => revision + 1)}
-                onPlaylistRenamed={(name, updatedAt) => {
-                  setSelectedPlaylist((current) => current && current.playlist.id === activePlaylist.id
-                    ? { ...current, playlist: { ...current.playlist, name, updatedAt } }
-                    : current)
+                onLibraryChange={(updatedPlaylist) => {
                   setLibraryRevision((revision) => revision + 1)
+                  if (updatedPlaylist && selectedPlaylist) {
+                    const key = `${selectedPlaylist.userId}:${updatedPlaylist.id}`
+                    setPlaylistMetadata((current) => current[key]?.updatedAt > updatedPlaylist.updatedAt
+                      ? current : { ...current, [key]: updatedPlaylist })
+                  }
+                }}
+                onPlaylistRenamed={(name, updatedAt) => {
+                  if (selectedPlaylist) replacePanel({ ...selectedPlaylist,
+                    playlist: { ...selectedPlaylist.playlist, name, updatedAt } })
                 }}
                 onPlaylistDeleted={() => {
-                  setSelectedPlaylist(null)
-                  setLibraryRevision((revision) => revision + 1)
+                  replacePanel(null)
                 }}
                 message={message}
                 roomError={error || roomError}
@@ -546,6 +539,8 @@ export function RoomPage() {
             )}
             {statsOpen && participant && <Suspense fallback={<div className="absolute inset-0 z-20 bg-canvas p-6 text-sm text-muted" role="status">{t('library.loading')}</div>}>
               <RoomStatsPanel key={recordsRevision} code={code} participantToken={participantToken}
+                tab={panel?.type === 'stats' ? panel.tab ?? 'stats' : 'stats'}
+                onTabChange={(tab) => replacePanel({ type: 'stats', tab })}
                 revision={`${room.currentSong?.id ?? ''}:${room.currentSong?.voteRevision ?? 0}:${room.playbackRevision}`}
                 historyRevision={room.currentSong?.id ?? ''}
                 participants={room.participants} currentParticipantId={participant.id}
@@ -559,12 +554,12 @@ export function RoomPage() {
               onSave={saveRoomSettings} onDelete={deleteRoom} onClose={closeSettings} />}
           </div>
             {queueOpen && <button type="button"
-              className="fixed inset-0 z-[75] bg-black/60 lg:hidden"
+              className="fixed inset-x-0 top-[var(--room-header-bottom,3.5rem)] bottom-0 z-[75] bg-black/60 lg:hidden"
               aria-label={t('queue.hide')}
               onClick={() => { setQueueOpen(false); setQueuePeek(false) }} />}
             <div
               className={cn(
-                'fixed inset-y-0 right-0 h-dvh transition-[width] duration-300 ease-out motion-reduce:transition-none lg:relative lg:inset-auto lg:z-30 lg:h-full',
+                'fixed top-[var(--room-header-bottom,3.5rem)] right-0 bottom-0 transition-[width] duration-300 ease-out motion-reduce:transition-none lg:relative lg:inset-auto lg:z-30 lg:h-full',
                 queueOpen || queuePeek ? 'z-[80]' : 'z-[65]',
                 queueOpen
                   ? 'w-[calc(100vw-24px)] max-w-[360px] lg:w-[360px] 2xl:w-[400px] 2xl:max-w-[400px]'

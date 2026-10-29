@@ -1,7 +1,7 @@
 {
   "name": "b-side-desktop",
   "productName": "B-SIDE",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "B-SIDE desktop app",
   "author": "whitekw",
@@ -28,11 +28,12 @@
       "main.cjs",
       "preload.cjs",
       "appUrl.cjs",
+      "updates.cjs",
       "assets/icon.png"
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,

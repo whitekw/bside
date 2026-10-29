@@ -7,6 +7,7 @@ const {
   isAllowedNavigation,
   chatNotification,
 } = require('./appUrl.cjs')
+const { createUpdateChecker } = require('./updates.cjs')
 
 const APP_ID = 'com.whitekw.bside'
 const siteUrl = siteOrigin(process.env.BSIDE_APP_URL || DEFAULT_SITE_URL)
@@ -61,6 +62,39 @@ if (!app.requestSingleInstanceLock()) {
         additionalArguments: customTitleBar ? ['--bside-custom-titlebar'] : [],
       },
     })
+
+    const trustedMainFrame = (event) => Boolean(mainWindow && !mainWindow.isDestroyed()
+      && event.sender === mainWindow.webContents
+      && event.senderFrame === mainWindow.webContents.mainFrame
+      && isSitePage(event.senderFrame.url, siteUrl))
+    const updateChecker = createUpdateChecker({
+      currentVersion: app.getVersion(),
+      ...(smokeTest ? { fetchImpl: async () => ({ ok: true, json: async () => [{
+        tag_name: 'v999.0.0', assets: [{ name: 'B-SIDE-999.0.0-Setup-x64.exe', state: 'uploaded',
+          browser_download_url: 'https://github.com/whitekw/jukebox/releases/download/v999.0.0/B-SIDE-999.0.0-Setup-x64.exe' }],
+      }] }) } : {}),
+      onChange: (state) => {
+        if (mainWindow && !mainWindow.isDestroyed() && isSitePage(mainWindow.webContents.getURL(), siteUrl)) {
+          mainWindow.webContents.send('desktop:update-state', state)
+        }
+      },
+    })
+    ipcMain.handle('desktop:update-state', (event) => trustedMainFrame(event) ? updateChecker.getState() : null)
+    ipcMain.handle('desktop:open-update', async (event) => {
+      if (!trustedMainFrame(event)) return false
+      const url = updateChecker.getDownloadUrl()
+      if (!url) return false
+      try { await shell.openExternal(url); return true } catch { return false }
+    })
+    // Release checks run in the main process, independently of web page reloads.
+    let updateTimer
+    if (app.isPackaged || smokeTest) {
+      void updateChecker.check()
+      if (!smokeTest) {
+        updateTimer = setInterval(() => void updateChecker.check(), 6 * 60 * 60_000)
+        mainWindow.on('focus', () => void updateChecker.check())
+      }
+    }
 
     const openExternal = (target) => {
       try {
@@ -131,7 +165,7 @@ if (!app.requestSingleInstanceLock()) {
       notification.show()
     })
 
-    mainWindow.on('closed', () => { mainWindow = null })
+    mainWindow.on('closed', () => { clearInterval(updateTimer); mainWindow = null })
     if (smokeTest) {
       mainWindow.webContents.once('did-finish-load', async () => {
         try {

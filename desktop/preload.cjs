@@ -1,6 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('bsideDesktop', {
+  updates: {
+    getState: () => ipcRenderer.invoke('desktop:update-state'),
+    openDownload: () => ipcRenderer.invoke('desktop:open-update'),
+    onChange(callback) {
+      if (typeof callback !== 'function') return () => {}
+      const listener = (_event, state) => callback(state)
+      ipcRenderer.on('desktop:update-state', listener)
+      return () => ipcRenderer.removeListener('desktop:update-state', listener)
+    },
+  },
   notifyChat(message) {
     if (!message || typeof message !== 'object') return
     ipcRenderer.send('desktop:chat', {

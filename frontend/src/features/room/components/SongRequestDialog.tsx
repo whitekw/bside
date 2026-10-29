@@ -29,7 +29,7 @@ export function SongRequestDialog({ code, participantToken, open, onClose, onAdd
       if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing ||
         document.querySelector('dialog:modal')) return
       event.preventDefault()
-      dialog.close()
+      onClose()
     }
     document.addEventListener('keydown', closeOnEscape)
     return () => {
@@ -38,19 +38,19 @@ export function SongRequestDialog({ code, participantToken, open, onClose, onAdd
       dialog.close()
       if (restoreFocus) trigger?.focus()
     }
-  }, [open])
+  }, [open, onClose])
 
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onCancel={(event) => { event.preventDefault(); if (open) onClose() }}
       className="absolute inset-0 z-20 m-0 h-full max-h-none w-full max-w-none overflow-hidden border-0 bg-canvas p-0 text-ink"
     >
       <div className="flex h-full min-h-0 flex-col">
         <PanelHeader titleId={titleId} title={t('search.requestSong')} subtitle={t('search.subtitle')}
           icon={<Search size={20} aria-hidden="true" />} closeLabel={t('common.close')}
-          onClose={() => dialogRef.current?.close()} />
+          onClose={onClose} />
         <div className="flex min-h-0 flex-1 flex-col px-4 py-5 sm:px-6">
           <SearchPanel code={code} participantToken={participantToken} className="min-h-0 flex-1" onAddSong={onAddSong}
             queuedVideoIds={queuedVideoIds} currentVideoId={currentVideoId} />

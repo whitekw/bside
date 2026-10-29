@@ -2,6 +2,11 @@ import { accountEn, accountJa, accountKo } from './accountMessages'
 import { termsEn, termsJa, termsKo } from './termsMessages'
 
 export const ko = {
+  'navigation.back': '뒤로 가기',
+  'navigation.forward': '앞으로 가기',
+  'room.returnHomeConfirm': '홈 화면으로 돌아갈까요?',
+  'desktop.updateAvailable': '업데이트 가능 · v{{version}} 다운로드',
+  'desktop.updateOpenFailed': '다운로드를 열지 못했습니다. 다시 눌러주세요.',
   ...accountKo,
   ...termsKo,
   'library.youtubeSynced': 'YouTube 동기화',
@@ -479,6 +484,11 @@ export const ko = {
 export type TranslationKey = keyof typeof ko
 
 export const ja = {
+  'navigation.back': '戻る',
+  'navigation.forward': '進む',
+  'room.returnHomeConfirm': 'ホーム画面に戻りますか？',
+  'desktop.updateAvailable': 'アップデートあり · v{{version}}をダウンロード',
+  'desktop.updateOpenFailed': 'ダウンロードを開けませんでした。もう一度押してください。',
   ...accountJa,
   ...termsJa,
   'library.youtubeSynced': 'YouTube同期',
@@ -954,6 +964,11 @@ export const ja = {
 } satisfies Record<TranslationKey, string>
 
 export const en = {
+  'navigation.back': 'Go back',
+  'navigation.forward': 'Go forward',
+  'room.returnHomeConfirm': 'Return to the home screen?',
+  'desktop.updateAvailable': 'Update available · Download v{{version}}',
+  'desktop.updateOpenFailed': 'Could not open the download. Click to try again.',
   ...accountEn,
   ...termsEn,
   'library.youtubeSynced': 'YouTube sync',
