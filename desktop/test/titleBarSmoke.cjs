@@ -3,6 +3,11 @@ const assert = require('node:assert/strict')
 async function runTitleBarSmoke(window, customTitleBar) {
   const page = (script) => window.webContents.executeJavaScript(script)
   const state = await page('({ title: document.title, bridge: typeof window.bsideDesktop })')
+  const updateState = await page('window.bsideDesktop.updates.getState()')
+  assert.equal(updateState.availableVersion, '999.0.0')
+  assert.equal(typeof updateState.currentVersion, 'string')
+  assert.equal(await page(`document.querySelector('iframe').contentWindow.bsideDesktop?.updates?.getState() ?? null`), null,
+    'Embedded frames must not read desktop update state')
   if (!customTitleBar) return state
   // Render the native window so Chromium dispatches viewport changes during
   // zoom tests. Keep it off screen without taking focus from the user's app.

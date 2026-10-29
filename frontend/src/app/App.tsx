@@ -12,6 +12,7 @@ import { AuthNotice } from '../features/auth/components/AuthNotice'
 import { PrivacyPage } from '../features/privacy/pages/PrivacyPage'
 import { TermsPage } from '../features/terms/pages/TermsPage'
 import { AccountPage } from '../features/auth/pages/AccountPage'
+import { NavigationProvider } from '../shared/NavigationProvider'
 
 function RoomRoute() {
   const { code = '' } = useParams()
@@ -21,8 +22,9 @@ function RoomRoute() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthNotice />
-      <Routes>
+      <NavigationProvider>
+        <AuthNotice />
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/rooms/new" element={<CreateRoomPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
@@ -30,7 +32,8 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/room/:code" element={<RoomRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </NavigationProvider>
     </BrowserRouter>
   )
 }

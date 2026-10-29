@@ -9,6 +9,10 @@ html[data-bside-desktop] [data-desktop-titlebar] {
   padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100vw - 138px)) + 16px);
 }
 
+html[data-bside-desktop] .listening-room > [data-desktop-titlebar] {
+  min-height: 56px;
+}
+
 html[data-bside-desktop] [data-desktop-titlebar] :is(a, button, input, select, textarea, [role="button"], [data-desktop-no-drag]),
 html[data-bside-desktop] [data-desktop-titlebar] [data-desktop-no-drag] * {
   -webkit-app-region: no-drag;
