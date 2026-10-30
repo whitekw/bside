@@ -25,6 +25,7 @@ import {
 import type { ChatMessage, RoomParticipant } from '../types'
 import { useChatWindow } from './useChatWindow'
 import { groupChatMessages } from './groupChatMessages'
+import { countUnreadChatMessages, parseChatReadSequence } from './chatReadState'
 
 type SystemChatMessage = Extract<ChatMessage, { type: 'system' }>
 
@@ -38,6 +39,7 @@ type ChatPanelProps = {
   mobileTriggerContainer?: HTMLElement | null
   hideMobileFloatingTrigger?: boolean
   onMobileTriggerClick?: () => void
+  onUnreadCountChange?: (count: number) => void
 }
 
 function formatSystemMessage(message: SystemChatMessage, t: Translate) {
@@ -83,12 +85,16 @@ export function ChatPanel({
   mobileTriggerContainer,
   hideMobileFloatingTrigger = false,
   onMobileTriggerClick,
+  onUnreadCountChange,
 }: ChatPanelProps) {
   const { locale, t } = useI18n()
   const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState<'conversation' | 'logs'>('conversation')
-  const [hasOpened, setHasOpened] = useState(false)
-  const [lastReadSequence, setLastReadSequence] = useState(0)
+  const readStorageKey = `jukebox:chat-read:${roomCode}:${currentParticipantId}`
+  const [lastReadSequence, setLastReadSequence] = useState(() => {
+    try { return parseChatReadSequence(window.sessionStorage.getItem(readStorageKey)) } catch { return 0 }
+  })
+  const [pageVisible, setPageVisible] = useState(() => !document.hidden)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<unknown>(null)
@@ -119,14 +125,7 @@ export function ChatPanel({
   )
   const latestSequence = messages.at(-1)?.sequence ?? 0
   const latestVisibleSequence = visibleMessages.at(-1)?.sequence ?? 0
-  const unreadCount = hasOpened
-    ? messages.filter(
-        (message) =>
-          message.type === 'message' &&
-          message.sequence > lastReadSequence &&
-          message.participantId !== currentParticipantId,
-      ).length
-    : 0
+  const unreadCount = countUnreadChatMessages(messages, lastReadSequence, currentParticipantId)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -151,8 +150,23 @@ export function ChatPanel({
   }, [open, isDesktop])
 
   useEffect(() => {
-    if (open && activeView === 'conversation') setLastReadSequence(latestSequence)
-  }, [latestSequence, open, activeView])
+    if (open && activeView === 'conversation' && pageVisible) {
+      setLastReadSequence(current => Math.max(current, latestSequence))
+    }
+  }, [latestSequence, open, activeView, pageVisible])
+
+  useEffect(() => {
+    try { window.sessionStorage.setItem(readStorageKey, String(lastReadSequence)) } catch { /* Reading still works without storage. */ }
+  }, [lastReadSequence, readStorageKey])
+
+  useEffect(() => {
+    const onVisibilityChange = () => setPageVisible(!document.hidden)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
+  useEffect(() => { onUnreadCountChange?.(unreadCount) }, [onUnreadCountChange, unreadCount])
+  useEffect(() => () => { onUnreadCountChange?.(0) }, [onUnreadCountChange])
 
   useEffect(() => {
     if (!open) return
@@ -164,14 +178,12 @@ export function ChatPanel({
     if (code !== roomCode) return
     setActiveView('conversation')
     setOpen(true)
-    setHasOpened(true)
   }), [roomCode])
 
   function toggleChat() {
     setOpen((current) => {
       const next = !current
       if (next) {
-        setHasOpened(true)
         setActiveView('conversation')
       }
       return next
@@ -199,19 +211,19 @@ export function ChatPanel({
       <button
         className={className}
         type="button"
-        aria-label={open ? t('chat.close') : t('chat.open')}
-        title={open ? t('chat.close') : t('chat.open')}
+        aria-label={open ? t('chat.close') : `${t('chat.open')}${unreadCount ? ` · ${t('chat.unread')}` : ''}`}
+        title={open ? t('chat.close') : `${t('chat.open')}${unreadCount ? ` · ${t('chat.unread')}` : ''}`}
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => { beforeToggle?.(); toggleChat() }}
       >
-        {open ? <CloseIcon size={iconSize} /> : <MessageCircleIcon size={iconSize} />}
+        <span className="relative inline-flex shrink-0">
+          {open ? <CloseIcon size={iconSize} /> : <MessageCircleIcon size={iconSize} />}
+          {!open && unreadCount > 0 && (
+            <span aria-hidden="true" className="absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-signal ring-2 ring-canvas" />
+          )}
+        </span>
         {labelled && <span className="hidden truncate text-sm group-data-[expanded=true]/collections:block">{t('chat.title')}</span>}
-        {!open && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-canvas bg-signal px-1 text-[11px] font-semibold text-canvas">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
       </button>
     )
   }

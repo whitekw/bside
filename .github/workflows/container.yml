@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -74,6 +78,8 @@ jobs:
         run: npm run build
 
   publish:
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     needs:
       - test
@@ -98,58 +104,88 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/whitekw/jukebox:master
-            ghcr.io/whitekw/jukebox:sha-${{ github.sha }}
+            ghcr.io/whitekw/bside:master
+            ghcr.io/whitekw/bside:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  update-deploy:
+  update-gitops:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs:
-      - publish
+    needs: publish
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
+      contents: read
 
     steps:
-      - name: Checkout source deployment template
+      - name: Checkout application
         uses: actions/checkout@v6
         with:
           path: source
 
-      - name: Checkout deploy branch
+      - name: Checkout GitOps repository
         uses: actions/checkout@v6
         with:
-          ref: deploy
-          path: deploy
+          repository: whitekw/gitops
+          ref: master
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
 
-      - name: Update deployment manifest
-        working-directory: deploy
+      - name: Update and commit deployment image
+        shell: bash
         env:
-          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_REF: ghcr.io/whitekw/bside:sha-${{ github.sha }}@${{ needs.publish.outputs.digest }}
+          IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
         run: |
-          cp ../source/compose.deploy.yaml compose.deploy.yaml
-          sed -i \
-            "s|^[[:space:]]*image:.*ghcr.io/whitekw/jukebox.*|    image: \"ghcr.io/whitekw/jukebox:${IMAGE_TAG}\"|" \
-            compose.deploy.yaml
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          git -C gitops config user.name "github-actions[bot]"
+          git -C gitops config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Commit deployment
-        working-directory: deploy
-        run: |
-          if git diff --quiet; then
-            echo "Deployment image is already up to date."
-            exit 0
-          fi
+          for attempt in 1 2 3; do
+            latest="$(git -C source ls-remote --exit-code origin refs/heads/master | cut -f1)"
+            if [ "$latest" != "$GITHUB_SHA" ]; then
+              echo "Skipping superseded application commit."
+              exit 0
+            fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add compose.deploy.yaml
-          git commit -m "Deploy ${GITHUB_SHA}"
-          git push origin HEAD:deploy
+            git -C gitops fetch origin master
+            git -C gitops reset --hard origin/master
+
+            python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("gitops/stacks/bside/compose.yaml")
+          content = path.read_text()
+          pattern = r'(?m)^    image:[ \t]*["\']?ghcr\.io/whitekw/(?:jukebox|bside)(?=[:@\s\"\x27]|$)[^\r\n]*$'
+          updated, count = re.subn(pattern, lambda _: '    image: "' + os.environ["IMAGE_REF"] + '"', content)
+          if count != 1:
+              raise SystemExit(f"Expected one bside deployment image, found {count}")
+          path.write_text(updated)
+          PY
+
+            docker compose -f gitops/stacks/bside/compose.yaml config --no-interpolate --quiet
+
+            if git -C gitops diff --quiet -- stacks/bside/compose.yaml; then
+              echo "Deployment image is already up to date."
+              exit 0
+            fi
+
+            git -C gitops add stacks/bside/compose.yaml
+            git -C gitops commit -m "Deploy bside ${GITHUB_SHA}"
+            if git -C gitops push origin HEAD:master; then
+              echo "Updated GitOps manifest. Komodo deployment is configured separately."
+              exit 0
+            fi
+            echo "Push failed; retrying against latest GitOps branch ($attempt/3)."
+          done
+          echo "::error::Unable to update GitOps after three attempts."
+          exit 1

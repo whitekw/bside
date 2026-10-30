@@ -11,7 +11,6 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { History, Menu, PanelRightOpen, WifiOff, X } from 'lucide-react'
 import { roomApi } from '../api'
-import { Brand } from '../../../shared/ui/Brand'
 import { DesktopUpdateButton } from '../../../shared/ui/DesktopUpdateButton'
 import { RoomHeader } from '../components/RoomHeader'
 import { AccountMenu } from '../../auth/components/AccountMenu'
@@ -24,7 +23,6 @@ import {
   chromeIconButtonStyles,
   cn,
   noticeStyles,
-  pageMessageStyles,
 } from '../../../shared/styles'
 import { useRoomState } from '../hooks/useRoomState'
 import { NowPlaying } from '../components/NowPlaying'
@@ -99,6 +97,7 @@ export function RoomPage() {
   const [settingsDraft, setSettingsDraft] = useState<RoomSettingsDraft | null>(null)
   const [queueOpen, setQueueOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
   const [queuePeek, setQueuePeek] = useState(false)
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
   const selectedPlaylist = panel?.type === 'playlist' ? panel : null
   const [libraryRevision, setLibraryRevision] = useState(0)
   const [playlistMetadata, setPlaylistMetadata] = useState<Record<string, Pick<Playlist, 'id' | 'name' | 'updatedAt'>>>({})
@@ -274,36 +273,28 @@ export function RoomPage() {
     }
   }
 
-  if (loading) {
+  if (loading || (room && (authLoading || participantLoading))) {
     return (
-      <main className={pageMessageStyles}>
-        <Brand className="absolute top-[26px] left-[30px]" />
-        <h1 className="mt-4 text-[clamp(24px,4vw,38px)]">
+      <main className="listening-room flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas">
+        <RoomHeader title={room?.title ?? ''}>{null}</RoomHeader>
+        <div role="status" className="flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted">
           {t('room.connecting')}
-        </h1>
+        </div>
       </main>
     )
   }
   if (!room) {
     return (
-      <main className={pageMessageStyles}>
-        <Brand className="absolute top-[26px] left-[30px]" />
-        <h1 className="mt-4 text-[clamp(24px,4vw,38px)]">
-          {roomError || t('room.roomNotFound')}
-        </h1>
-        <Link className={buttonStyles({ intent: 'outline' })} to="/">
-          {t('common.home')}
-        </Link>
-      </main>
-    )
-  }
-  if (authLoading || participantLoading) {
-    return (
-      <main className={pageMessageStyles}>
-        <Brand className="absolute top-[26px] left-[30px]" />
-        <h1 className="mt-4 text-[clamp(24px,4vw,38px)]">
-          {t('room.connecting')}
-        </h1>
+      <main className="listening-room flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas">
+        <RoomHeader title="">{null}</RoomHeader>
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+          <h1 className="text-[clamp(24px,4vw,38px)]">
+            {roomError || t('room.roomNotFound')}
+          </h1>
+          <Link className={buttonStyles({ intent: 'outline' })} to="/">
+            {t('common.home')}
+          </Link>
+        </div>
       </main>
     )
   }
@@ -406,11 +397,13 @@ export function RoomPage() {
             />
           </div>
           <DesktopUpdateButton />
-          <button type="button" className={cn(chromeIconButtonStyles, 'text-white lg:hidden')}
-            aria-label={t(queueOpen ? 'queue.hide' : 'room.openMenu')} title={t(queueOpen ? 'queue.hide' : 'room.openMenu')}
+          <button type="button" className={cn(chromeIconButtonStyles, 'relative text-white lg:hidden')}
+            aria-label={`${t(queueOpen ? 'queue.hide' : 'room.openMenu')}${unreadChatCount ? ` · ${t('chat.unread')}` : ''}`}
+            title={t(queueOpen ? 'queue.hide' : 'room.openMenu')}
             aria-controls="room-queue-panel" aria-expanded={queueOpen}
             onClick={() => { setQueueOpen((open) => !open); setQueuePeek(false) }}>
             {queueOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+            {unreadChatCount > 0 && <span aria-hidden="true" className="absolute top-1.5 right-1.5 size-2 rounded-full bg-signal ring-2 ring-canvas" />}
           </button>
       </RoomHeader>
 
@@ -716,10 +709,12 @@ export function RoomPage() {
       />
       {participant && (
         <ChatPanel
+          key={`${code}:${participant.id}`}
           roomCode={code}
           messages={chatMessages}
           participants={room.participants}
           currentParticipantId={participant.id}
+          onUnreadCountChange={setUnreadChatCount}
           triggerContainer={chatTriggerContainer}
           mobileTriggerContainer={mobileChatTriggerContainer}
           hideMobileFloatingTrigger
